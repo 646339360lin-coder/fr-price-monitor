@@ -95,7 +95,7 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
     structured = await extract_structured_product(page)
     embedded = extract_embedded_prices(html)
     dom_prices = await extract_dom_prices(page)
-    page_text = (title + " " + html[:50_000]).lower()
+    page_text = ((title or "") + " " + html[:50_000]).lower()
     clearance = any(word in page_text for word in CLEARANCE_WORDS)
 
     current_price = first_number(
@@ -231,7 +231,7 @@ async def extract_dom_prices(page: "Page") -> dict[str, Any]:
     }
 
 
-async def extract_promotion_status(page: Page) -> str | None:
+async def extract_promotion_status(page: "Page") -> str | None:
     selectors = [
         "#couponText",
         ".couponBadge",
@@ -332,7 +332,11 @@ async def run(args: argparse.Namespace) -> int:
         for index, product in enumerate(products, start=1):
             url = normalize_product_url(product["url"])
             print(f"[{index}/{len(products)}] {product.get('brand')} {product.get('model')} {url}")
-            record = await scrape_product(page, product, dry_run=args.dry_run)
+            try:
+                record = await scrape_product(page, product, dry_run=args.dry_run)
+            except Exception as exc:
+                record = build_error_record(product, url, f"unexpected_error: {exc}")
+                print(f"  unexpected error: {exc}", file=sys.stderr)
             results.append(record)
             if index < len(products):
                 await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
