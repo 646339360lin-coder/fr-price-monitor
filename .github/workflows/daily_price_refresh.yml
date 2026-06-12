@@ -1,0 +1,60 @@
+name: Daily Amazon.fr Price Refresh
+
+on:
+  schedule:
+    - cron: "20 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Refresh prices
+        run: python daily_price_refresh.py --allow-empty
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p public
+          cp price_dashboard.html public/index.html
+          cp price_results_latest.json public/price_results_latest.json
+          cp price_history.json public/price_history.json
+
+      - name: Commit refreshed JSON
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Refresh Amazon.fr price data"
+          file_pattern: "price_results_latest.json price_history.json"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

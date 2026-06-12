@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Amazon.fr 竞品价格监控看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --text: #172033;
+        --muted: #647084;
+        --line: #d9dee8;
+        --accent: #2563eb;
+        --good: #047857;
+        --warn: #b45309;
+        --bad: #b91c1c;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); }
+      header { padding: 28px clamp(16px, 4vw, 48px) 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+      h1 { margin: 4px 0 8px; font-size: clamp(24px, 3vw, 36px); }
+      h2 { margin: 0 0 14px; font-size: 18px; }
+      .eyebrow { margin: 0; color: var(--accent); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 12px; }
+      .subtitle { margin: 0; color: var(--muted); }
+      main { padding: 22px clamp(16px, 4vw, 48px) 42px; display: grid; gap: 18px; }
+      section, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+      .filters { display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+      label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+      select, input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit; background: white; color: var(--text); }
+      .metrics { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 12px; }
+      .metric { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #fbfcfe; }
+      .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+      .metric strong { font-size: 24px; }
+      .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 18px; }
+      .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+      table { width: 100%; border-collapse: collapse; min-width: 980px; }
+      th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
+      th { background: #f1f4f8; color: #344055; position: sticky; top: 0; z-index: 1; }
+      tr:hover td { background: #f9fbff; }
+      .price { font-weight: 700; }
+      .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; background: #eef2ff; color: #3730a3; }
+      .badge.good { background: #ecfdf5; color: var(--good); }
+      .badge.warn { background: #fffbeb; color: var(--warn); }
+      .badge.bad { background: #fef2f2; color: var(--bad); }
+      .muted { color: var(--muted); }
+      .summary-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .summary-list li { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+      .chart-panel { min-height: 360px; }
+      canvas { max-height: 320px; }
+      a { color: var(--accent); text-decoration: none; }
+      @media (max-width: 980px) {
+        .filters, .metrics, .dashboard-grid { grid-template-columns: 1fr; }
+        main, header { padding-left: 14px; padding-right: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <p class="eyebrow">Amazon.fr Price Monitor</p>
+      <h1>法国市场手机配件竞品价格监控</h1>
+      <p class="subtitle">覆盖 Tentoki 与核心竞品，支持品牌、品类、价格区间筛选和历史价格趋势。</p>
+    </header>
+
+    <main>
+      <section class="filters">
+        <label>品牌<select id="brandFilter"><option value="">全部品牌</option></select></label>
+        <label>品类<select id="categoryFilter"><option value="">全部品类</option></select></label>
+        <label>重点型号<select id="modelFilter"><option value="">全部型号</option></select></label>
+        <label>最低价<input id="minPrice" type="number" min="0" step="0.01" placeholder="EUR" /></label>
+        <label>最高价<input id="maxPrice" type="number" min="0" step="0.01" placeholder="EUR" /></label>
+      </section>
+
+      <section class="metrics" id="metrics"></section>
+
+      <div class="dashboard-grid">
+        <section>
+          <h2>商品明细</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>产品</th>
+                  <th>品牌</th>
+                  <th>品类</th>
+                  <th>型号</th>
+                  <th>当前价</th>
+                  <th>MSRP</th>
+                  <th>折扣</th>
+                  <th>促销</th>
+                  <th>状态</th>
+                  <th>抓取时间</th>
+                </tr>
+              </thead>
+              <tbody id="productRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="chart-panel">
+          <h2>价格趋势</h2>
+          <label>选择产品<select id="productSelect"></select></label>
+          <canvas id="priceChart"></canvas>
+        </section>
+      </div>
+
+      <section>
+        <h2>本周价格异动统计</h2>
+        <ul class="summary-list" id="weeklyChanges"></ul>
+      </section>
+    </main>
+
+    <script>
+      const state = { latest: [], history: [], chart: null };
+      const fmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+
+      async function loadJson(url, fallback) {
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) return fallback;
+          return await res.json();
+        } catch {
+          return fallback;
+        }
+      }
+
+      function keyOf(item) {
+        return item.product_id || item.asin || item.product_url || item.product_name;
+      }
+
+      function price(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : null;
+      }
+
+      function filteredProducts() {
+        const brand = document.querySelector("#brandFilter").value;
+        const category = document.querySelector("#categoryFilter").value;
+        const model = document.querySelector("#modelFilter").value;
+        const min = price(document.querySelector("#minPrice").value);
+        const max = price(document.querySelector("#maxPrice").value);
+        return state.latest.filter((item) => {
+          const current = price(item.current_price);
+          if (brand && item.brand !== brand) return false;
+          if (category && item.category !== category) return false;
+          if (model && item.model !== model) return false;
+          if (min !== null && (current === null || current < min)) return false;
+          if (max !== null && (current === null || current > max)) return false;
+          return true;
+        });
+      }
+
+      function fillSelect(selector, values) {
+        const select = document.querySelector(selector);
+        const current = select.value;
+        select.innerHTML = select.firstElementChild.outerHTML;
+        [...new Set(values.filter(Boolean))].sort().forEach((value) => {
+          const opt = document.createElement("option");
+          opt.value = value;
+          opt.textContent = value;
+          select.appendChild(opt);
+        });
+        select.value = current;
+      }
+
+      function renderMetrics(rows) {
+        const prices = rows.map((item) => price(item.current_price)).filter((value) => value !== null);
+        const promos = rows.filter((item) => item.promotion_status).length;
+        const discounts = rows.filter((item) => Number(item.discount_percent) > 0).length;
+        const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+        document.querySelector("#metrics").innerHTML = [
+          ["监控商品", rows.length],
+          ["成功取价", prices.length],
+          ["平均售价", avg === null ? "-" : fmt.format(avg)],
+          ["有折扣", discounts],
+          ["有促销", promos],
+        ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join("");
+      }
+
+      function renderTable(rows) {
+        document.querySelector("#productRows").innerHTML = rows.map((item) => {
+          const current = price(item.current_price);
+          const msrp = price(item.msrp_price);
+          const discount = Number(item.discount_percent);
+          return `<tr>
+            <td><a href="${item.product_url}" target="_blank" rel="noreferrer">${escapeHtml(item.product_name || item.asin || "未命名产品")}</a></td>
+            <td>${escapeHtml(item.brand || "-")}</td>
+            <td>${escapeHtml(item.category || "-")}</td>
+            <td>${escapeHtml(item.model || "-")}</td>
+            <td class="price">${current === null ? "-" : fmt.format(current)}</td>
+            <td>${msrp === null ? "-" : fmt.format(msrp)}</td>
+            <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
+            <td>${item.promotion_status ? `<span class="badge warn">${escapeHtml(item.promotion_status)}</span>` : "-"}</td>
+            <td><span class="badge ${String(item.status || "").startsWith("ok") ? "good" : "bad"}">${escapeHtml(item.status || "-")}</span></td>
+            <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
+          </tr>`;
+        }).join("");
+      }
+
+      function renderProductSelect(rows) {
+        const select = document.querySelector("#productSelect");
+        const selected = select.value;
+        select.innerHTML = rows.map((item) => `<option value="${escapeHtml(keyOf(item))}">${escapeHtml(item.brand || "")} ${escapeHtml(item.model || "")} - ${escapeHtml(item.product_name || item.asin || "")}</option>`).join("");
+        if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+        renderChart();
+      }
+
+      function renderChart() {
+        const selected = document.querySelector("#productSelect").value;
+        const points = state.history
+          .filter((item) => keyOf(item) === selected && price(item.current_price) !== null)
+          .sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
+        const labels = points.map((item) => item.scraped_at?.slice(0, 10) || "");
+        const current = points.map((item) => price(item.current_price));
+        const msrp = points.map((item) => price(item.msrp_price));
+        if (state.chart) state.chart.destroy();
+        state.chart = new Chart(document.querySelector("#priceChart"), {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              { label: "当前售价", data: current, borderColor: "#2563eb", backgroundColor: "#2563eb", tension: 0.25 },
+              { label: "MSRP", data: msrp, borderColor: "#b45309", backgroundColor: "#b45309", tension: 0.25 },
+            ],
+          },
+          options: { responsive: true, scales: { y: { ticks: { callback: (value) => fmt.format(value) } } } },
+        });
+      }
+
+      function renderWeeklyChanges() {
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const grouped = new Map();
+        state.history.forEach((item) => {
+          const time = Date.parse(item.scraped_at || "");
+          if (!time || time < weekAgo) return;
+          const key = keyOf(item);
+          if (!grouped.has(key)) grouped.set(key, []);
+          grouped.get(key).push(item);
+        });
+        const changes = [];
+        grouped.forEach((rows) => {
+          rows.sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
+          const first = rows[0], last = rows[rows.length - 1];
+          const currentDelta = delta(first.current_price, last.current_price);
+          const msrpDelta = delta(first.msrp_price, last.msrp_price);
+          const newPromo = !first.promotion_status && Boolean(last.promotion_status);
+          if (currentDelta || msrpDelta || newPromo) changes.push({ last, currentDelta, msrpDelta, newPromo });
+        });
+        const stats = {
+          "售价降价": changes.filter((c) => c.currentDelta < 0).length,
+          "售价涨价": changes.filter((c) => c.currentDelta > 0).length,
+          "MSRP 降价": changes.filter((c) => c.msrpDelta < 0).length,
+          "MSRP 涨价": changes.filter((c) => c.msrpDelta > 0).length,
+          "新促销": changes.filter((c) => c.newPromo).length,
+        };
+        document.querySelector("#weeklyChanges").innerHTML = Object.entries(stats)
+          .map(([label, value]) => `<li><strong>${label}</strong><br><span class="muted">${value} 个商品</span></li>`)
+          .join("") || `<li class="muted">暂无本周异动</li>`;
+      }
+
+      function delta(a, b) {
+        const first = price(a), last = price(b);
+        if (first === null || last === null) return null;
+        const diff = Number((last - first).toFixed(2));
+        return diff === 0 ? null : diff;
+      }
+
+      function render() {
+        const rows = filteredProducts();
+        renderMetrics(rows);
+        renderTable(rows);
+        renderProductSelect(rows);
+        renderWeeklyChanges();
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+      }
+
+      async function init() {
+        const latest = await loadJson("price_results_latest.json", { products: [] });
+        const history = await loadJson("price_history.json", { products: [] });
+        state.latest = latest.products || [];
+        state.history = history.products || state.latest;
+        fillSelect("#brandFilter", state.latest.map((item) => item.brand));
+        fillSelect("#categoryFilter", state.latest.map((item) => item.category));
+        fillSelect("#modelFilter", state.latest.map((item) => item.model));
+        document.querySelectorAll("select,input").forEach((el) => el.addEventListener("input", render));
+        document.querySelector("#productSelect").addEventListener("change", renderChart);
+        render();
+      }
+
+      init();
+    </script>
+  </body>
+</html>

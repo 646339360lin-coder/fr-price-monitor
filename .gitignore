@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.venv/
+playwright-report/
+test-results/
+price_results_latest.json.tmp
+price_history.json.tmp
+
+# Local browser/debug artifacts
+.amazon-browser-profile/
+.amazon-debug-profile/
+debug-*.png
+
+# Old local Node prototype dependencies
+node_modules/
+
+# Local generated reports that are not part of the price monitor app
+outputs/
+*.xlsx

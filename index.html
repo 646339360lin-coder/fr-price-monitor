@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Amazon 竞品价格监控看板</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Amazon Price Monitor</p>
+        <h1>竞品 ASIN 价格监控看板</h1>
+        <p class="subtitle">按站点查看竞品价格、促销、库存、评分和卖家变化。</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="refreshData" type="button">刷新数据</button>
+        <button id="exportCsv" type="button">导出当前视图</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="status-strip" id="statusStrip">
+        <span>正在读取数据...</span>
+      </section>
+
+      <section class="filters" aria-label="筛选条件">
+        <label>
+          搜索
+          <input id="searchInput" type="search" placeholder="ASIN / 品牌 / 标题 / 卖家" />
+        </label>
+        <label>
+          品牌
+          <select id="brandFilter">
+            <option value="">全部品牌</option>
+          </select>
+        </label>
+        <label>
+          产品线
+          <select id="productLineFilter">
+            <option value="">全部产品线</option>
+          </select>
+        </label>
+        <label>
+          状态
+          <select id="statusFilter">
+            <option value="">全部状态</option>
+            <option value="ok">正常</option>
+            <option value="retry">重试成功</option>
+            <option value="pending">待抓取</option>
+            <option value="issue">异常/缺失</option>
+          </select>
+        </label>
+        <div class="site-filter" id="siteFilter" aria-label="站点筛选"></div>
+      </section>
+
+      <section class="add-panel" aria-label="新增监控">
+        <div class="section-heading compact">
+          <h2>新增监控 ASIN</h2>
+          <span>优先写入 CSV 清单；静态打开时保存在当前浏览器</span>
+        </div>
+        <form id="addAsinForm" class="add-form">
+          <label>
+            站点
+            <select id="newSite" required>
+              <option value="US">US</option>
+              <option value="UK">UK</option>
+              <option value="DE">DE</option>
+              <option value="FR">FR</option>
+              <option value="IT">IT</option>
+              <option value="ES">ES</option>
+            </select>
+          </label>
+          <label>
+            ASIN
+            <input id="newAsin" type="text" placeholder="B0XXXXXXXX" maxlength="10" required />
+          </label>
+          <label>
+            品牌
+            <input id="newBrand" type="text" placeholder="例如 JETech" />
+          </label>
+          <label>
+            产品线
+            <input id="newProductLine" type="text" placeholder="例如 iPhone 17 Screen Protector" />
+          </label>
+          <label>
+            品类
+            <input id="newCategory" type="text" placeholder="例如 Screen Protector" />
+          </label>
+          <div class="add-actions">
+            <button type="submit">加入监控</button>
+            <button id="clearManualRows" type="button">清空手动新增</button>
+          </div>
+        </form>
+        <p id="addAsinMessage" class="form-message"></p>
+      </section>
+
+      <section class="metrics" id="metrics" aria-label="概览指标"></section>
+
+      <section class="alerts">
+        <div class="section-heading">
+          <h2>今日关注</h2>
+          <span id="alertCount"></span>
+        </div>
+        <div id="alertsList" class="alerts-list"></div>
+      </section>
+
+      <section class="matrix">
+        <div class="section-heading">
+          <h2>站点 / 产品线监控</h2>
+          <span id="matrixCount"></span>
+        </div>
+        <div id="productMatrix" class="product-matrix"></div>
+      </section>
+
+      <section class="table-section">
+        <div class="section-heading">
+          <h2>明细表</h2>
+          <span id="rowCount"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ASIN</th>
+                <th>站点</th>
+                <th>品牌</th>
+                <th>价格</th>
+                <th>折扣</th>
+                <th>促销</th>
+                <th>库存</th>
+                <th>评分</th>
+                <th>评论</th>
+                <th>卖家</th>
+                <th>配送 / 观察地址</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="detailRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="assets/dashboard.js"></script>
+  </body>
+</html>

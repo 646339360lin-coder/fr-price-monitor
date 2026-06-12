@@ -1,0 +1,191 @@
+{
+  "market": "FR",
+  "site": "Amazon.fr",
+  "notes": [
+    "只监控 Amazon.fr 商品详情页。",
+    "enabled=false 的条目是待补充占位，拿到 ASIN 或完整商品链接后改成 enabled=true。",
+    "建议优先补齐 iPhone 13、iPhone 15、iPhone 17、iPhone 17 Pro、iPhone 17 Pro Max 的 Tentoki 和核心竞品链接。"
+  ],
+  "products": [
+    {
+      "id": "B0CFY3D3SK",
+      "asin": "B0CFY3D3SK",
+      "url": "https://www.amazon.fr/dp/B0CFY3D3SK",
+      "brand": "Tentoki",
+      "category": "Verre Trempé",
+      "model": "iPhone 13",
+      "name": "Tentoki iPhone 13/13 Pro/14/16e/17e verre trempé",
+      "enabled": true
+    },
+    {
+      "id": "B0D6G91CCK",
+      "asin": "B0D6G91CCK",
+      "url": "https://www.amazon.fr/dp/B0D6G91CCK",
+      "brand": "Tentoki",
+      "category": "Verre Trempé",
+      "model": "iPhone 15",
+      "name": "Tentoki iPhone 15/16 verre trempé confidentialité",
+      "enabled": true
+    },
+    {
+      "id": "B0FHQ4BG36",
+      "asin": "B0FHQ4BG36",
+      "url": "https://www.amazon.fr/dp/B0FHQ4BG36",
+      "brand": "Tentoki",
+      "category": "Verre Trempé",
+      "model": "iPhone 17",
+      "name": "Tentoki iPhone 17 / iPhone 16 Pro verre trempé confidentialité",
+      "enabled": true
+    },
+    {
+      "id": "B0FHQ4MQGD",
+      "asin": "B0FHQ4MQGD",
+      "url": "https://www.amazon.fr/dp/B0FHQ4MQGD",
+      "brand": "Tentoki",
+      "category": "Verre Trempé",
+      "model": "iPhone 17 Pro",
+      "name": "Tentoki iPhone 17 Pro verre trempé",
+      "enabled": true
+    },
+    {
+      "id": "B0FHQ4G8K5",
+      "asin": "B0FHQ4G8K5",
+      "url": "https://www.amazon.fr/dp/B0FHQ4G8K5",
+      "brand": "Tentoki",
+      "category": "Verre Trempé",
+      "model": "iPhone 17 Pro Max",
+      "name": "Tentoki iPhone 17 Pro Max verre trempé confidentialité",
+      "enabled": true
+    },
+    {
+      "id": "B0FJS7782G",
+      "asin": "B0FJS7782G",
+      "url": "https://www.amazon.fr/dp/B0FJS7782G",
+      "brand": "TOCOL",
+      "category": "Films et protections d'écran pour téléphones portables",
+      "model": "iPhone 17",
+      "name": "TOCOL iPhone 17 protection écran",
+      "enabled": true
+    },
+    {
+      "id": "B0F8VZ7QVX",
+      "asin": "B0F8VZ7QVX",
+      "url": "https://www.amazon.fr/dp/B0F8VZ7QVX",
+      "brand": "NEW'C",
+      "category": "Films et protections d'écran pour téléphones portables",
+      "model": "iPhone 17 / iPhone 17 Pro",
+      "name": "NEW'C iPhone 17 / 17 Pro protection écran",
+      "enabled": true
+    },
+    {
+      "id": "B0FJL9J43M",
+      "asin": "B0FJL9J43M",
+      "url": "https://www.amazon.fr/dp/B0FJL9J43M",
+      "brand": "JETech",
+      "category": "Films et protections d'écran pour téléphones portables",
+      "model": "iPhone 17",
+      "name": "JETech iPhone 17 protection écran",
+      "enabled": true
+    },
+    {
+      "id": "B0D66R47PD",
+      "asin": "B0D66R47PD",
+      "url": "https://www.amazon.fr/dp/B0D66R47PD",
+      "brand": "Tentoki",
+      "category": "Coque",
+      "model": "iPhone 13",
+      "name": "Tentoki iPhone 13 coque transparente + 2 protections écran",
+      "enabled": true
+    },
+    {
+      "id": "B0D7ZP14V9",
+      "asin": "B0D7ZP14V9",
+      "url": "https://www.amazon.fr/dp/B0D7ZP14V9",
+      "brand": "Tentoki",
+      "category": "Coque",
+      "model": "iPhone 15",
+      "name": "Tentoki iPhone 15 coque transparente + 2 protections écran",
+      "enabled": true
+    },
+    {
+      "id": "B0F9P3VNS6",
+      "asin": "B0F9P3VNS6",
+      "url": "https://www.amazon.fr/dp/B0F9P3VNS6",
+      "brand": "Tentoki",
+      "category": "Coques et housses standards pour téléphones portables",
+      "model": "iPhone 17",
+      "name": "Tentoki iPhone 17 coque transparente",
+      "enabled": true
+    },
+    {
+      "id": "B0F9P16KP1",
+      "asin": "B0F9P16KP1",
+      "url": "https://www.amazon.fr/dp/B0F9P16KP1",
+      "brand": "Tentoki",
+      "category": "Coques et housses standards pour téléphones portables",
+      "model": "iPhone 17 Pro",
+      "name": "Tentoki iPhone 17 Pro coque transparente",
+      "enabled": true
+    },
+    {
+      "id": "B0F9P16D61",
+      "asin": "B0F9P16D61",
+      "url": "https://www.amazon.fr/dp/B0F9P16D61",
+      "brand": "Tentoki",
+      "category": "Coques et housses standards pour téléphones portables",
+      "model": "iPhone 17 Pro Max",
+      "name": "Tentoki iPhone 17 Pro Max coque transparente",
+      "enabled": true
+    },
+    {
+      "id": "B0F71BG423",
+      "asin": "B0F71BG423",
+      "url": "https://www.amazon.fr/dp/B0F71BG423",
+      "brand": "NEW'C",
+      "category": "Films et protections d'écran pour téléphones portables",
+      "model": "iPhone 16 Pro / iPhone 17 Pro à vérifier",
+      "name": "NEW'C iPhone 16 Pro protection écran / couverture à vérifier",
+      "enabled": true
+    },
+    {
+      "id": "B0FVFR9SWS",
+      "asin": "B0FVFR9SWS",
+      "url": "https://www.amazon.fr/dp/B0FVFR9SWS",
+      "brand": "À vérifier",
+      "category": "Films et protections d'écran pour téléphones portables",
+      "model": "À vérifier",
+      "name": "Produit Amazon.fr à identifier automatiquement au prochain crawl",
+      "enabled": true
+    },
+    {
+      "id": "TAURI-IP13-TODO",
+      "asin": "",
+      "url": "",
+      "brand": "Tauri",
+      "category": "Coque",
+      "model": "iPhone 13",
+      "name": "待补充 Tauri iPhone 13 coque / protection",
+      "enabled": false
+    },
+    {
+      "id": "TORRAS-IP15-TODO",
+      "asin": "",
+      "url": "",
+      "brand": "Torras",
+      "category": "Coques et housses standards pour téléphones portables",
+      "model": "iPhone 15",
+      "name": "待补充 Torras iPhone 15 coque",
+      "enabled": false
+    },
+    {
+      "id": "IVOLER-IP17PM-TODO",
+      "asin": "",
+      "url": "",
+      "brand": "ivoler",
+      "category": "Verre Trempé",
+      "model": "iPhone 17 Pro Max",
+      "name": "待补充 ivoler iPhone 17 Pro Max verre trempé",
+      "enabled": false
+    }
+  ]
+}
