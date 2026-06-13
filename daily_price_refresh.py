@@ -10,7 +10,7 @@ import urllib.robotparser
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 from price_history_manager import merge_price_results
 
@@ -26,6 +26,7 @@ USER_AGENT = (
 )
 AMAZON_FR_HOST = "www.amazon.fr"
 CLEARANCE_WORDS = ("clearance", "déstockage", "destockage", "liquidation", "soldes")
+DEFAULT_POSTCODE = "06200"
 
 
 def utc_now_iso() -> str:
@@ -51,6 +52,14 @@ def normalize_product_url(url: str) -> str:
     if asin:
         return f"https://www.amazon.fr/dp/{asin}"
     return url
+
+
+def with_french_language(url: str) -> str:
+    parsed = urlparse(url)
+    query = "language=fr_FR"
+    if parsed.query:
+        query = parsed.query + "&language=fr_FR"
+    return urlunparse(parsed._replace(query=query))
 
 
 def extract_asin(url: str) -> str | None:
@@ -83,7 +92,7 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         return build_error_record(product, url, "blocked_by_robots_txt")
 
     try:
-        await page.goto(url, wait_until="domcontentloaded", timeout=45_000)
+        await page.goto(with_french_language(url), wait_until="domcontentloaded", timeout=45_000)
         await page.wait_for_timeout(1200)
     except Exception as exc:
         if exc.__class__.__name__ == "TimeoutError":
@@ -126,6 +135,8 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         "product_url": url,
         "scraped_at": utc_now_iso(),
         "source": "amazon.fr",
+        "observer_postcode": product.get("observer_postcode") or DEFAULT_POSTCODE,
+        "observer_location": await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link"),
         "price_source": structured.get("price_source") or embedded.get("price_source") or dom_prices.get("price_source"),
         "msrp_source": structured.get("msrp_source") or embedded.get("msrp_source") or dom_prices.get("msrp_source"),
         "clearance_detected": clearance,
@@ -213,12 +224,12 @@ def extract_embedded_prices(html: str) -> dict[str, Any]:
 
 
 async def extract_dom_prices(page: "Page") -> dict[str, Any]:
-    current = await safe_text(
+    current = await safe_text_content(
         page,
         ".a-price.aok-align-center .a-offscreen, #corePrice_feature_div .a-price .a-offscreen, "
         "#apex_desktop .a-price .a-offscreen, .priceToPay .a-offscreen",
     )
-    msrp = await safe_text(
+    msrp = await safe_text_content(
         page,
         ".basisPrice .a-offscreen, .a-text-price .a-offscreen, "
         "#corePriceDisplay_desktop_feature_div span.a-text-price .a-offscreen",
@@ -259,6 +270,46 @@ async def safe_text(page: "Page", selector: str) -> str | None:
     return text or None
 
 
+async def safe_text_content(page: "Page", selector: str) -> str | None:
+    try:
+        locator = page.locator(selector).first
+        if await locator.count() == 0:
+            return None
+        text = await locator.text_content(timeout=2500)
+    except Exception:
+        return None
+    text = re.sub(r"\s+", " ", text or "").strip()
+    return text or None
+
+
+async def set_delivery_postcode(page: "Page", postcode: str) -> str:
+    await page.goto("https://www.amazon.fr/?language=fr_FR", wait_until="domcontentloaded", timeout=45_000)
+    await page.wait_for_timeout(1500)
+    current_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+    if current_location and postcode in current_location:
+        return current_location
+
+    try:
+        await page.locator("#nav-global-location-popover-link").click(timeout=8000)
+        await page.locator("#GLUXZipUpdateInput").fill(postcode, timeout=8000)
+        await page.locator("#GLUXZipUpdate .a-button-input, input[aria-labelledby='GLUXZipUpdate-announce']").click(timeout=8000)
+        await page.wait_for_timeout(2200)
+        for selector in ("#GLUXConfirmClose", ".a-popover-footer #GLUXConfirmClose", "button[name='glowDoneButton']"):
+            try:
+                if await page.locator(selector).count():
+                    await page.locator(selector).first.click(timeout=2500)
+                    break
+            except Exception:
+                pass
+        await page.wait_for_timeout(1200)
+        await page.reload(wait_until="domcontentloaded", timeout=45_000)
+        await page.wait_for_timeout(1000)
+    except Exception as exc:
+        print(f"Unable to set Amazon.fr postcode {postcode}: {exc}", file=sys.stderr)
+
+    return await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link") or ""
+
+
 def normalize_price(value: Any) -> float | None:
     if value in (None, ""):
         return None
@@ -295,6 +346,7 @@ def build_error_record(product: dict[str, Any], url: str, status: str) -> dict[s
         "product_url": url,
         "scraped_at": utc_now_iso(),
         "source": "amazon.fr",
+        "observer_postcode": product.get("observer_postcode") or DEFAULT_POSTCODE,
         "status": status,
     }
 
@@ -329,6 +381,9 @@ async def run(args: argparse.Namespace) -> int:
             extra_http_headers={"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.6"},
         )
         page = await context.new_page()
+        if not args.skip_location:
+            location = await set_delivery_postcode(page, args.postcode)
+            print(f"Amazon.fr delivery location: {location or 'not captured'}")
         for index, product in enumerate(products, start=1):
             url = normalize_product_url(product["url"])
             print(f"[{index}/{len(products)}] {product.get('brand')} {product.get('model')} {url}")
@@ -354,6 +409,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-delay", type=float, default=1.0)
     parser.add_argument("--max-delay", type=float, default=3.0)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--postcode", default=DEFAULT_POSTCODE)
+    parser.add_argument("--skip-location", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--headful", action="store_true")
     parser.add_argument("--allow-empty", action="store_true", help="Exit 0 even when all prices are missing")
