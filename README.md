@@ -42,6 +42,18 @@ python daily_price_refresh.py --dry-run --allow-empty
 python daily_price_refresh.py
 ```
 
+如果要抓取和法国前台一致的本地价，建议用持久浏览器资料夹，并在第一次打开时确认配送地址为 `06200`、语言为法语：
+
+```bash
+python daily_price_refresh.py --headful --user-data-dir .amazon-fr-profile --postcode 06200 --limit 1
+```
+
+第一次运行时如果 Amazon 没有自动切到 `06200`，在打开的浏览器里手动把配送地址改为 `06200`。后续运行复用同一个资料夹：
+
+```bash
+python daily_price_refresh.py --user-data-dir .amazon-fr-profile --postcode 06200
+```
+
 打开本地看板：
 
 ```bash

@@ -229,6 +229,11 @@ async def extract_dom_prices(page: "Page") -> dict[str, Any]:
         ".a-price.aok-align-center .a-offscreen, #corePrice_feature_div .a-price .a-offscreen, "
         "#apex_desktop .a-price .a-offscreen, .priceToPay .a-offscreen",
     )
+    if current is None:
+        current = await extract_split_amazon_price(
+            page,
+            "#corePrice_feature_div .priceToPay, #corePrice_feature_div .a-price, #apex_desktop .priceToPay",
+        )
     msrp = await safe_text_content(
         page,
         ".basisPrice .a-offscreen, .a-text-price .a-offscreen, "
@@ -282,15 +287,41 @@ async def safe_text_content(page: "Page", selector: str) -> str | None:
     return text or None
 
 
+async def extract_split_amazon_price(page: "Page", selector: str) -> str | None:
+    try:
+        locator = page.locator(selector).first
+        if await locator.count() == 0:
+            return None
+        whole = await locator.locator(".a-price-whole").first.text_content(timeout=2000)
+        fraction = await locator.locator(".a-price-fraction").first.text_content(timeout=2000)
+        symbol = await locator.locator(".a-price-symbol").first.text_content(timeout=1000)
+    except Exception:
+        return None
+    whole = re.sub(r"\D", "", whole or "")
+    fraction = re.sub(r"\D", "", fraction or "")
+    symbol = (symbol or "€").strip()
+    if not whole:
+        return None
+    return f"{whole},{fraction or '00'} {symbol}"
+
+
 async def set_delivery_postcode(page: "Page", postcode: str) -> str:
-    await page.goto("https://www.amazon.fr/?language=fr_FR", wait_until="domcontentloaded", timeout=45_000)
-    await page.wait_for_timeout(1500)
+    await page.goto("https://www.amazon.fr/?language=fr_FR", wait_until="load", timeout=45_000)
+    await page.wait_for_timeout(3000)
+    await dismiss_cookie_banner(page)
     current_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
     if current_location and postcode in current_location:
         return current_location
 
     try:
-        await page.locator("#nav-global-location-popover-link").click(timeout=8000)
+        await page.evaluate(
+            """() => {
+              const link = document.getElementById('nav-global-location-popover-link');
+              if (link) link.click();
+            }"""
+        )
+        await page.wait_for_timeout(1000)
+        await choose_france_in_location_modal(page)
         await page.locator("#GLUXZipUpdateInput").fill(postcode, timeout=8000)
         await page.locator("#GLUXZipUpdate .a-button-input, input[aria-labelledby='GLUXZipUpdate-announce']").click(timeout=8000)
         await page.wait_for_timeout(2200)
@@ -308,6 +339,58 @@ async def set_delivery_postcode(page: "Page", postcode: str) -> str:
         print(f"Unable to set Amazon.fr postcode {postcode}: {exc}", file=sys.stderr)
 
     return await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link") or ""
+
+
+async def dismiss_cookie_banner(page: "Page") -> None:
+    try:
+        clicked = await page.evaluate(
+            """() => {
+              const button = document.getElementById('sp-cc-rejectall-link') || document.getElementById('sp-cc-accept');
+              if (!button) return false;
+              button.click();
+              return true;
+            }"""
+        )
+        if clicked:
+            await page.wait_for_timeout(1000)
+            return
+    except Exception:
+        pass
+
+    for selector in (
+        "#sp-cc-rejectall-link",
+        "#sp-cc-accept",
+        "input[name='accept']",
+        "text=Refuser",
+        "text=Accepter",
+    ):
+        try:
+            if await page.locator(selector).count():
+                await page.locator(selector).first.click(timeout=2500)
+                await page.wait_for_timeout(800)
+                return
+        except Exception:
+            pass
+
+
+async def choose_france_in_location_modal(page: "Page") -> None:
+    try:
+        country_value = await safe_text(page, "#GLUXCountryValue")
+        if country_value and "france" in country_value.lower():
+            return
+        if await page.locator("#GLUXCountryListDropdown").count():
+            await page.locator("#GLUXCountryListDropdown").click(timeout=3000)
+            await page.wait_for_timeout(500)
+            for selector in (
+                "a.a-dropdown-link:has-text('France')",
+                "#GLUXCountryList a:has-text('France')",
+            ):
+                if await page.locator(selector).count():
+                    await page.locator(selector).first.click(timeout=3000)
+                    await page.wait_for_timeout(800)
+                    return
+    except Exception as exc:
+        print(f"Unable to choose France in location modal: {exc}", file=sys.stderr)
 
 
 def normalize_price(value: Any) -> float | None:
@@ -372,14 +455,23 @@ async def run(args: argparse.Namespace) -> int:
     from playwright.async_api import async_playwright
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=not args.headful)
-        context = await browser.new_context(
-            user_agent=USER_AGENT,
-            locale="fr-FR",
-            timezone_id="Europe/Paris",
-            viewport={"width": 1365, "height": 900},
-            extra_http_headers={"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.6"},
-        )
+        context_options = {
+            "user_agent": USER_AGENT,
+            "locale": "fr-FR",
+            "timezone_id": "Europe/Paris",
+            "viewport": {"width": 1365, "height": 900},
+            "extra_http_headers": {"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.6"},
+        }
+        browser = None
+        if args.user_data_dir:
+            context = await p.chromium.launch_persistent_context(
+                args.user_data_dir,
+                headless=not args.headful,
+                **context_options,
+            )
+        else:
+            browser = await p.chromium.launch(headless=not args.headful)
+            context = await browser.new_context(**context_options)
         page = await context.new_page()
         if not args.skip_location:
             location = await set_delivery_postcode(page, args.postcode)
@@ -395,7 +487,9 @@ async def run(args: argparse.Namespace) -> int:
             results.append(record)
             if index < len(products):
                 await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
-        await browser.close()
+        await context.close()
+        if browser:
+            await browser.close()
 
     latest = merge_price_results(results)
     ok_count = sum(1 for item in latest["products"] if item.get("status") == "ok")
@@ -411,6 +505,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--postcode", default=DEFAULT_POSTCODE)
     parser.add_argument("--skip-location", action="store_true")
+    parser.add_argument("--user-data-dir", help="Persistent browser profile directory for a pre-set Amazon.fr location/session")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--headful", action="store_true")
     parser.add_argument("--allow-empty", action="store_true", help="Exit 0 even when all prices are missing")

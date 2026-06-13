@@ -11,6 +11,7 @@ price_history.json.tmp
 # Local browser/debug artifacts
 .amazon-browser-profile/
 .amazon-debug-profile/
+.amazon-fr-profile/
 debug-*.png
 
 # Old local Node prototype dependencies
