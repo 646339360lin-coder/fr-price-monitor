@@ -19,5 +19,6 @@ debug-*.png
 node_modules/
 
 # Local generated reports that are not part of the price monitor app
+price_verification_report.json
 outputs/
 *.xlsx

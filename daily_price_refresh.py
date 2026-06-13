@@ -326,6 +326,13 @@ async def set_delivery_postcode(page: "Page", postcode: str) -> str:
     if current_location and postcode in current_location:
         return current_location
 
+    if await set_delivery_postcode_via_ajax(page, postcode):
+        await page.goto("https://www.amazon.fr/?language=fr_FR", wait_until="domcontentloaded", timeout=45_000)
+        await page.wait_for_timeout(1200)
+        current_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+        if current_location and postcode in current_location:
+            return current_location
+
     try:
         await page.evaluate(
             """() => {
@@ -352,6 +359,43 @@ async def set_delivery_postcode(page: "Page", postcode: str) -> str:
         print(f"Unable to set Amazon.fr postcode {postcode}: {exc}", file=sys.stderr)
 
     return await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link") or ""
+
+
+async def set_delivery_postcode_via_ajax(page: "Page", postcode: str) -> bool:
+    try:
+        result = await page.evaluate(
+            """async (postcode) => {
+              const params = new URLSearchParams({
+                locationType: "LOCATION_INPUT",
+                zipCode: postcode,
+                storeContext: "generic",
+                deviceType: "web",
+                pageType: "Gateway",
+                actionSource: "glow"
+              });
+              const response = await fetch("/gp/delivery/ajax/address-change.html", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                  "x-requested-with": "XMLHttpRequest"
+                },
+                body: params.toString()
+              });
+              if (!response.ok) return { ok: false, status: response.status };
+              const payload = await response.json().catch(() => ({}));
+              return {
+                ok: Boolean(payload.successful || payload.isAddressUpdated),
+                status: response.status,
+                payload
+              };
+            }""",
+            postcode,
+        )
+        return bool(result and result.get("ok"))
+    except Exception as exc:
+        print(f"Unable to set Amazon.fr postcode {postcode} via ajax: {exc}", file=sys.stderr)
+        return False
 
 
 async def dismiss_cookie_banner(page: "Page") -> None:

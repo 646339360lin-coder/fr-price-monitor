@@ -169,16 +169,23 @@
 
       function renderMetrics(rows) {
         const prices = rows.map((item) => price(item.current_price)).filter((value) => value !== null);
+        const fresh = rows.filter((item) => item.status === "ok" || item.status === "ok_manual").length;
+        const stale = rows.filter((item) => item.status === "stale_price").length;
         const promos = rows.filter((item) => item.promotion_status).length;
-        const discounts = rows.filter((item) => Number(item.discount_percent) > 0).length;
         const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
         document.querySelector("#metrics").innerHTML = [
           ["监控商品", rows.length],
-          ["可显示价格", prices.length],
+          ["本次成功取价", fresh],
+          ["沿用历史价", stale],
           ["平均售价", avg === null ? "-" : fmt.format(avg)],
-          ["有折扣", discounts],
           ["有促销", promos],
         ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join("");
+      }
+
+      function statusBadgeClass(status) {
+        if (String(status || "").startsWith("ok")) return "good";
+        if (status === "stale_price") return "warn";
+        return "bad";
       }
 
       function renderTable(rows) {
@@ -195,7 +202,7 @@
             <td>${msrp === null ? "-" : fmt.format(msrp)}</td>
             <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
             <td>${item.promotion_status ? `<span class="badge warn">${escapeHtml(item.promotion_status)}</span>` : "-"}</td>
-            <td><span class="badge ${String(item.status || "").startsWith("ok") || item.status === "stale_price" ? "good" : "bad"}">${escapeHtml(item.status || "-")}</span></td>
+            <td><span class="badge ${statusBadgeClass(item.status)}">${escapeHtml(item.status || "-")}</span></td>
             <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
           </tr>`;
         }).join("");
