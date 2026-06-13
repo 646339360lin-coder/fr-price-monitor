@@ -54,6 +54,14 @@ python daily_price_refresh.py --headful --user-data-dir .amazon-fr-profile --pos
 python daily_price_refresh.py --user-data-dir .amazon-fr-profile --postcode 06200
 ```
 
+如果本机已有 Chromium/紫鸟浏览器开放了 DevTools 调试端口，并且前台地址已经是 `06200`，可以直接复用这个真实前台会话抓价。例子：
+
+```bash
+python daily_price_refresh.py --cdp-endpoint http://127.0.0.1:51679 --skip-location
+```
+
+这个方式更适合抽查价格是否和前台一致，因为它直接读取当前浏览器会话里的 Amazon.fr 页面状态。
+
 打开本地看板：
 
 ```bash
