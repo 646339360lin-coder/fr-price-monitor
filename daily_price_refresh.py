@@ -109,13 +109,25 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
 
     current_price = first_number(
         structured.get("price"),
-        embedded.get("current_price"),
         dom_prices.get("current_price"),
+        embedded.get("current_price"),
+    )
+    current_price_source = first_source_for_price(
+        current_price,
+        (structured.get("price"), structured.get("price_source")),
+        (dom_prices.get("current_price"), dom_prices.get("price_source")),
+        (embedded.get("current_price"), embedded.get("price_source")),
     )
     msrp_price = first_number(
         structured.get("msrp_price"),
-        embedded.get("msrp_price"),
         None if clearance else dom_prices.get("msrp_price"),
+        embedded.get("msrp_price"),
+    )
+    msrp_price_source = first_source_for_price(
+        msrp_price,
+        (structured.get("msrp_price"), structured.get("msrp_source")),
+        (None if clearance else dom_prices.get("msrp_price"), dom_prices.get("msrp_source")),
+        (embedded.get("msrp_price"), embedded.get("msrp_source")),
     )
 
     promo = await extract_promotion_status(page)
@@ -137,8 +149,8 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         "source": "amazon.fr",
         "observer_postcode": product.get("observer_postcode") or DEFAULT_POSTCODE,
         "observer_location": await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link"),
-        "price_source": structured.get("price_source") or embedded.get("price_source") or dom_prices.get("price_source"),
-        "msrp_source": structured.get("msrp_source") or embedded.get("msrp_source") or dom_prices.get("msrp_source"),
+        "price_source": current_price_source,
+        "msrp_source": msrp_price_source,
         "clearance_detected": clearance,
         "status": "ok" if current_price is not None else "price_missing",
     }
@@ -236,8 +248,9 @@ async def extract_dom_prices(page: "Page") -> dict[str, Any]:
         )
     msrp = await safe_text_content(
         page,
-        ".basisPrice .a-offscreen, .a-text-price .a-offscreen, "
-        "#corePriceDisplay_desktop_feature_div span.a-text-price .a-offscreen",
+        ".apex-basisprice-value .a-offscreen, .basisPrice .apex-basisprice-value .a-offscreen, "
+        ".centralizedApexBasisPriceCSS .apex-basisprice-value .a-offscreen, "
+        "#corePriceDisplay_desktop_feature_div .basisPrice .a-offscreen",
     )
     return {
         "current_price": normalize_price(current),
@@ -413,6 +426,17 @@ def first_number(*values: Any) -> float | None:
     return None
 
 
+def first_source_for_price(target: Any, *value_sources: tuple[Any, Any]) -> str | None:
+    target_number = normalize_price(target)
+    if target_number is None:
+        return None
+    for value, source in value_sources:
+        number = normalize_price(value)
+        if number is not None and number == target_number:
+            return source
+    return None
+
+
 def build_error_record(product: dict[str, Any], url: str, status: str) -> dict[str, Any]:
     return {
         "product_id": product.get("id") or extract_asin(url) or url,
@@ -463,7 +487,12 @@ async def run(args: argparse.Namespace) -> int:
             "extra_http_headers": {"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.6"},
         }
         browser = None
-        if args.user_data_dir:
+        external_cdp = False
+        if args.cdp_endpoint:
+            browser = await p.chromium.connect_over_cdp(args.cdp_endpoint)
+            context = browser.contexts[0] if browser.contexts else await browser.new_context(**context_options)
+            external_cdp = True
+        elif args.user_data_dir:
             context = await p.chromium.launch_persistent_context(
                 args.user_data_dir,
                 headless=not args.headful,
@@ -473,7 +502,7 @@ async def run(args: argparse.Namespace) -> int:
             browser = await p.chromium.launch(headless=not args.headful)
             context = await browser.new_context(**context_options)
         page = await context.new_page()
-        if not args.skip_location:
+        if not args.skip_location and not args.cdp_endpoint:
             location = await set_delivery_postcode(page, args.postcode)
             print(f"Amazon.fr delivery location: {location or 'not captured'}")
         for index, product in enumerate(products, start=1):
@@ -487,8 +516,11 @@ async def run(args: argparse.Namespace) -> int:
             results.append(record)
             if index < len(products):
                 await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
-        await context.close()
-        if browser:
+        if external_cdp:
+            await page.close()
+        else:
+            await context.close()
+        if browser and not external_cdp:
             await browser.close()
 
     latest = merge_price_results(results)
@@ -506,6 +538,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--postcode", default=DEFAULT_POSTCODE)
     parser.add_argument("--skip-location", action="store_true")
     parser.add_argument("--user-data-dir", help="Persistent browser profile directory for a pre-set Amazon.fr location/session")
+    parser.add_argument("--cdp-endpoint", help="Existing Chromium DevTools endpoint, e.g. http://127.0.0.1:51679")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--headful", action="store_true")
     parser.add_argument("--allow-empty", action="store_true", help="Exit 0 even when all prices are missing")
