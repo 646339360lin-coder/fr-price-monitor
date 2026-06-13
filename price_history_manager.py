@@ -74,6 +74,16 @@ def latest_history_by_product(history: dict[str, Any]) -> dict[str, dict[str, An
     return latest
 
 
+def latest_valid_history_by_product(history: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    latest: dict[str, dict[str, Any]] = {}
+    for entry in history.get("products", []):
+        key = product_key(entry)
+        if not key or price_as_float(entry.get("current_price")) is None:
+            continue
+        latest[key] = entry
+    return latest
+
+
 def inherit_clearance_msrp(record: dict[str, Any], previous: dict[str, Any] | None) -> dict[str, Any]:
     if not record.get("clearance_detected"):
         return record
@@ -92,12 +102,14 @@ def merge_price_results(
 ) -> dict[str, Any]:
     history = load_json(history_path, {"generated_at": None, "products": []})
     previous_by_key = latest_history_by_product(history)
+    previous_valid_by_key = latest_valid_history_by_product(history)
 
     normalized_records: list[dict[str, Any]] = []
     scrape_time = utc_now_iso()
     for raw in new_records:
         record = deepcopy(raw)
         record.setdefault("scraped_at", scrape_time)
+        record = carry_forward_valid_price(record, previous_valid_by_key.get(product_key(record)))
         record = inherit_clearance_msrp(record, previous_by_key.get(product_key(record)))
         record["discount_percent"] = calculate_discount(record.get("current_price"), record.get("msrp_price"))
         normalized_records.append(record)
@@ -125,6 +137,27 @@ def merge_price_results(
     save_json(latest_path, latest_payload)
     save_json(history_path, history_payload)
     return latest_payload
+
+
+def carry_forward_valid_price(record: dict[str, Any], previous: dict[str, Any] | None) -> dict[str, Any]:
+    if price_as_float(record.get("current_price")) is not None or not previous:
+        return record
+    original_status = record.get("status") or "price_missing"
+    record["current_price"] = previous.get("current_price")
+    if record.get("msrp_price") is None:
+        record["msrp_price"] = previous.get("msrp_price")
+    if not record.get("promotion_status"):
+        record["promotion_status"] = previous.get("promotion_status")
+    if not record.get("availability"):
+        record["availability"] = previous.get("availability")
+    record["price_source"] = "history_carried_forward"
+    if record.get("msrp_price") is not None and not record.get("msrp_source"):
+        record["msrp_source"] = "history_carried_forward"
+    record["price_carried_forward"] = True
+    record["last_success_scraped_at"] = previous.get("scraped_at")
+    record["last_attempt_status"] = original_status
+    record["status"] = "stale_price"
+    return record
 
 
 def prune_history(records: list[dict[str, Any]], days: int) -> list[dict[str, Any]]:

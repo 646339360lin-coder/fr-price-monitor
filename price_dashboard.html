@@ -132,6 +132,7 @@
       }
 
       function price(value) {
+        if (value === null || value === undefined || value === "") return null;
         const number = Number(value);
         return Number.isFinite(number) ? number : null;
       }
@@ -173,7 +174,7 @@
         const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
         document.querySelector("#metrics").innerHTML = [
           ["监控商品", rows.length],
-          ["成功取价", prices.length],
+          ["可显示价格", prices.length],
           ["平均售价", avg === null ? "-" : fmt.format(avg)],
           ["有折扣", discounts],
           ["有促销", promos],
@@ -190,11 +191,11 @@
             <td>${escapeHtml(item.brand || "-")}</td>
             <td>${escapeHtml(item.category || "-")}</td>
             <td>${escapeHtml(item.model || "-")}</td>
-            <td class="price">${current === null ? "-" : fmt.format(current)}</td>
+            <td class="price">${current === null ? "-" : fmt.format(current)}${item.price_carried_forward ? `<br><span class="muted">沿用上次有效价</span>` : ""}</td>
             <td>${msrp === null ? "-" : fmt.format(msrp)}</td>
             <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
             <td>${item.promotion_status ? `<span class="badge warn">${escapeHtml(item.promotion_status)}</span>` : "-"}</td>
-            <td><span class="badge ${String(item.status || "").startsWith("ok") ? "good" : "bad"}">${escapeHtml(item.status || "-")}</span></td>
+            <td><span class="badge ${String(item.status || "").startsWith("ok") || item.status === "stale_price" ? "good" : "bad"}">${escapeHtml(item.status || "-")}</span></td>
             <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
           </tr>`;
         }).join("");
