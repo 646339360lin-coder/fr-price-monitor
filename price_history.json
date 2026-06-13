@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-13T06:01:32Z",
+  "generated_at": "2026-06-13T06:17:59Z",
   "market": "FR",
   "site": "Amazon.fr",
   "currency": "EUR",
@@ -1626,6 +1626,31 @@
       "clearance_detected": false,
       "status": "ok",
       "discount_percent": null
+    },
+    {
+      "product_id": "B0FJS7782G",
+      "asin": "B0FJS7782G",
+      "product_name": "TOCOL Verre Trempé pour iPhone 17, Dépoussiérage Automatique, Sans Bulles, Dureté 9H, Couverture Complète Protection écran, Coques de Téléphone Compatibles, 2 Pièces",
+      "brand": "TOCOL",
+      "category": "Films et protections d'écran pour téléphones portables",
+      "model": "iPhone 17",
+      "current_price": 10.99,
+      "msrp_price": 11.99,
+      "currency": "EUR",
+      "promotion_status": "5% offerts pour 4 article(s) acheté(s)",
+      "availability": "En stock",
+      "product_url": "https://www.amazon.fr/dp/B0FJS7782G",
+      "scraped_at": "2026-06-13T06:17:59Z",
+      "source": "manual_frontend_verified_06200",
+      "observer_postcode": "06200",
+      "observer_location": "Votre adresse de livraison: 06200",
+      "price_source": "manual_frontend_verified_06200",
+      "msrp_source": "manual_frontend_verified_06200",
+      "clearance_detected": false,
+      "status": "ok_manual",
+      "discount_percent": 8.34,
+      "price_carried_forward": false,
+      "last_attempt_status": null
     }
   ]
 }
