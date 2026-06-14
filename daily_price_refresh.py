@@ -85,6 +85,7 @@ def robots_allowed(url: str, user_agent: str = USER_AGENT) -> bool:
 
 async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
     url = normalize_product_url(product["url"])
+    observer_postcode = product.get("observer_postcode") or DEFAULT_POSTCODE
     if dry_run:
         return build_error_record(product, url, "dry_run")
 
@@ -94,6 +95,11 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
     try:
         await page.goto(with_french_language(url), wait_until="domcontentloaded", timeout=45_000)
         await page.wait_for_timeout(1200)
+        observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+        if not location_matches_postcode(observer_location, observer_postcode):
+            if await set_delivery_postcode_via_ajax(page, observer_postcode):
+                await page.goto(with_french_language(url), wait_until="domcontentloaded", timeout=45_000)
+                await page.wait_for_timeout(1200)
     except Exception as exc:
         if exc.__class__.__name__ == "TimeoutError":
             return build_error_record(product, url, "timeout")
@@ -132,6 +138,13 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
 
     promo = await extract_promotion_status(page)
     availability = await safe_text(page, "#availability, #outOfStock")
+    observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+    location_valid = location_matches_postcode(observer_location, observer_postcode)
+    if not location_valid:
+        current_price = None
+        msrp_price = None
+        current_price_source = None
+        msrp_price_source = None
     record = {
         "product_id": product.get("id") or extract_asin(url) or url,
         "asin": extract_asin(url),
@@ -147,12 +160,12 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         "product_url": url,
         "scraped_at": utc_now_iso(),
         "source": "amazon.fr",
-        "observer_postcode": product.get("observer_postcode") or DEFAULT_POSTCODE,
-        "observer_location": await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link"),
+        "observer_postcode": observer_postcode,
+        "observer_location": observer_location,
         "price_source": current_price_source,
         "msrp_source": msrp_price_source,
         "clearance_detected": clearance,
-        "status": "ok" if current_price is not None else "price_missing",
+        "status": "ok" if current_price is not None else ("location_not_postcode" if not location_valid else "price_missing"),
     }
     return record
 
@@ -368,6 +381,8 @@ async def set_delivery_postcode_via_ajax(page: "Page", postcode: str) -> bool:
               const params = new URLSearchParams({
                 locationType: "LOCATION_INPUT",
                 zipCode: postcode,
+                countryCode: "FR",
+                city: "Nice",
                 storeContext: "generic",
                 deviceType: "web",
                 pageType: "Gateway",
@@ -392,6 +407,15 @@ async def set_delivery_postcode_via_ajax(page: "Page", postcode: str) -> bool:
             }""",
             postcode,
         )
+        if result:
+            payload = result.get("payload") or {}
+            address = payload.get("address") or {}
+            print(
+                "Amazon.fr ajax location result: "
+                f"ok={result.get('ok')} "
+                f"country={address.get('countryCode')} "
+                f"zip={address.get('zipCode')}",
+            )
         return bool(result and result.get("ok"))
     except Exception as exc:
         print(f"Unable to set Amazon.fr postcode {postcode} via ajax: {exc}", file=sys.stderr)
@@ -479,6 +503,10 @@ def first_source_for_price(target: Any, *value_sources: tuple[Any, Any]) -> str 
         if number is not None and number == target_number:
             return source
     return None
+
+
+def location_matches_postcode(location: str | None, postcode: str) -> bool:
+    return bool(location and postcode and postcode in location)
 
 
 def build_error_record(product: dict[str, Any], url: str, status: str) -> dict[str, Any]:
