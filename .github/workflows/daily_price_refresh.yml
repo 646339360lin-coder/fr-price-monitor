@@ -46,6 +46,7 @@ jobs:
         run: |
           mkdir -p public
           cp price_dashboard.html public/index.html
+          cp price_dashboard.html public/price_dashboard.html
           cp price_results_latest.json public/price_results_latest.json
           cp price_history.json public/price_history.json
 
@@ -78,6 +79,7 @@ jobs:
         run: |
           mkdir -p public
           cp price_dashboard.html public/index.html
+          cp price_dashboard.html public/price_dashboard.html
           cp price_results_latest.json public/price_results_latest.json
           cp price_history.json public/price_history.json
 

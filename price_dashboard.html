@@ -28,6 +28,8 @@
       .subtitle { margin: 0; color: var(--muted); }
       main { padding: 22px clamp(16px, 4vw, 48px) 42px; display: grid; gap: 18px; }
       section, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+      .data-status { display: none; border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+      .data-status.active { display: block; }
       .filters { display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 12px; align-items: end; }
       label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
       select, input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit; background: white; color: var(--text); }
@@ -66,6 +68,8 @@
     </header>
 
     <main>
+      <section class="data-status" id="dataStatus"></section>
+
       <section class="filters">
         <label>品牌<select id="brandFilter"><option value="">全部品牌</option></select></label>
         <label>类型<select id="categoryFilter"><option value="">全部类型</option></select></label>
@@ -121,12 +125,27 @@
       const state = { latest: [], history: [], chart: null };
       const fmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
+      function withCacheBust(url) {
+        const separator = url.includes("?") ? "&" : "?";
+        return `${url}${separator}v=${Date.now()}`;
+      }
+
+      function showStatus(message, isError = false) {
+        const status = document.querySelector("#dataStatus");
+        status.textContent = message;
+        status.classList.toggle("active", Boolean(message));
+        status.style.borderColor = isError ? "#fca5a5" : "#f59e0b";
+        status.style.background = isError ? "#fef2f2" : "#fffbeb";
+        status.style.color = isError ? "#991b1b" : "#92400e";
+      }
+
       async function loadJson(url, fallback) {
         try {
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) return fallback;
+          const res = await fetch(withCacheBust(url), { cache: "no-store" });
+          if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
           return await res.json();
-        } catch {
+        } catch (error) {
+          showStatus(`数据文件读取失败：${error.message}。请确认打开的是 GitHub Pages 根地址，并刷新页面。`, true);
           return fallback;
         }
       }
@@ -226,6 +245,10 @@
       }
 
       function renderChart() {
+        if (!window.Chart) {
+          showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
+          return;
+        }
         const selected = document.querySelector("#productSelect").value;
         const points = state.history
           .filter((item) => keyOf(item) === selected && price(item.current_price) !== null)
@@ -302,6 +325,11 @@
         const history = await loadJson("price_history.json", { products: [] });
         state.latest = latest.products || [];
         state.history = history.products || state.latest;
+        if (state.latest.length) {
+          showStatus("");
+        } else {
+          showStatus("当前页面没有读取到商品数据。如果你打开的是 price_dashboard.html，请改用 GitHub Pages 根地址。", true);
+        }
         fillSelect("#brandFilter", state.latest.map((item) => item.brand));
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
         fillSelect("#styleFilter", state.latest.map((item) => item.style));
