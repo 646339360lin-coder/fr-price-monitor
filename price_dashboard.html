@@ -37,12 +37,12 @@
       .metric { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #fbfcfe; }
       .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
       .metric strong { font-size: 24px; }
-      .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 18px; }
       .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-      table { width: 100%; border-collapse: collapse; min-width: 1240px; }
+      table { width: 100%; border-collapse: collapse; min-width: 1500px; }
       th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
       th { background: #f1f4f8; color: #344055; position: sticky; top: 0; z-index: 1; }
       tr:hover td { background: #f9fbff; }
+      .asin-link { font-weight: 700; white-space: nowrap; }
       .price { font-weight: 700; }
       .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; background: #eef2ff; color: #3730a3; }
       .badge.good { background: #ecfdf5; color: var(--good); }
@@ -50,12 +50,18 @@
       .badge.bad { background: #fef2f2; color: var(--bad); }
       .muted { color: var(--muted); }
       .summary-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-      .summary-list li { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-      .chart-panel { min-height: 360px; }
+      .summary-list details { border: 1px solid var(--line); border-radius: 8px; background: #fbfcfe; }
+      .summary-list summary { display: grid; grid-template-columns: minmax(140px, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; cursor: pointer; font-weight: 700; }
+      .summary-count { color: var(--muted); font-size: 20px; font-weight: 600; }
+      .change-detail { padding: 0 16px 16px; overflow: auto; }
+      .change-table { min-width: 860px; }
+      .chart-controls { max-width: 420px; margin-bottom: 14px; }
+      .chart-panel { min-height: 420px; }
       canvas { max-height: 320px; }
       a { color: var(--accent); text-decoration: none; }
       @media (max-width: 980px) {
-        .filters, .metrics, .dashboard-grid { grid-template-columns: 1fr; }
+        .filters, .metrics { grid-template-columns: 1fr; }
+        table { min-width: 1180px; }
         main, header { padding-left: 14px; padding-right: 14px; }
       }
     </style>
@@ -81,39 +87,40 @@
 
       <section class="metrics" id="metrics"></section>
 
-      <div class="dashboard-grid">
-        <section>
-          <h2>商品明细</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>产品</th>
-                  <th>品牌</th>
-                  <th>类型</th>
-                  <th>款式</th>
-                  <th>型号</th>
-                  <th>规格</th>
-                  <th>手机品牌</th>
-                  <th>当前价</th>
-                  <th>MSRP</th>
-                  <th>折扣</th>
-                  <th>促销</th>
-                  <th>状态</th>
-                  <th>抓取时间</th>
-                </tr>
-              </thead>
-              <tbody id="productRows"></tbody>
-            </table>
-          </div>
-        </section>
+      <section>
+        <h2>商品明细</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ASIN</th>
+                <th>品牌</th>
+                <th>类型</th>
+                <th>款式</th>
+                <th>型号</th>
+                <th>规格</th>
+                <th>手机品牌</th>
+                <th>当前价</th>
+                <th>MSRP</th>
+                <th>折扣</th>
+                <th>促销</th>
+                <th>状态</th>
+                <th>抓取时间</th>
+              </tr>
+            </thead>
+            <tbody id="productRows"></tbody>
+          </table>
+        </div>
+      </section>
 
-        <section class="chart-panel">
-          <h2>价格趋势</h2>
-          <label>选择产品<select id="productSelect"></select></label>
-          <canvas id="priceChart"></canvas>
-        </section>
-      </div>
+      <section class="chart-panel">
+        <h2>价格趋势</h2>
+        <label class="chart-controls">输入 ASIN
+          <input id="productAsinInput" list="asinOptions" placeholder="例如 B0FJS7782G" autocomplete="off" />
+          <datalist id="asinOptions"></datalist>
+        </label>
+        <canvas id="priceChart"></canvas>
+      </section>
 
       <section>
         <h2>本周价格异动统计</h2>
@@ -152,6 +159,10 @@
 
       function keyOf(item) {
         return item.product_id || item.asin || item.product_url || item.product_name;
+      }
+
+      function asinOf(item) {
+        return item.asin || item.product_id || "";
       }
 
       function price(value) {
@@ -218,8 +229,9 @@
           const current = price(item.current_price);
           const msrp = price(item.msrp_price);
           const discount = Number(item.discount_percent);
+          const asin = asinOf(item) || "-";
           return `<tr>
-            <td><a href="${item.product_url}" target="_blank" rel="noreferrer">${escapeHtml(item.product_name || item.asin || "未命名产品")}</a></td>
+            <td><a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
             <td>${escapeHtml(item.brand || "-")}</td>
             <td>${escapeHtml(item.category || "-")}</td>
             <td>${escapeHtml(item.style || "-")}</td>
@@ -236,11 +248,13 @@
         }).join("");
       }
 
-      function renderProductSelect(rows) {
-        const select = document.querySelector("#productSelect");
-        const selected = select.value;
-        select.innerHTML = rows.map((item) => `<option value="${escapeHtml(keyOf(item))}">${escapeHtml(item.brand || "")} ${escapeHtml(item.model || "")} - ${escapeHtml(item.product_name || item.asin || "")}</option>`).join("");
-        if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+      function renderProductAsinOptions(rows) {
+        const input = document.querySelector("#productAsinInput");
+        const list = document.querySelector("#asinOptions");
+        const selected = input.value.trim();
+        const asins = [...new Set(rows.map(asinOf).filter(Boolean))].sort();
+        list.innerHTML = asins.map((asin) => `<option value="${escapeHtml(asin)}"></option>`).join("");
+        if (!selected || !asins.includes(selected)) input.value = asins[0] || "";
         renderChart();
       }
 
@@ -249,9 +263,9 @@
           showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
           return;
         }
-        const selected = document.querySelector("#productSelect").value;
+        const selected = document.querySelector("#productAsinInput").value.trim();
         const points = state.history
-          .filter((item) => keyOf(item) === selected && price(item.current_price) !== null)
+          .filter((item) => asinOf(item) === selected && price(item.current_price) !== null)
           .sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
         const labels = points.map((item) => item.scraped_at?.slice(0, 10) || "");
         const current = points.map((item) => price(item.current_price));
@@ -271,6 +285,13 @@
       }
 
       function renderWeeklyChanges() {
+        const categories = weeklyChangeCategories();
+        document.querySelector("#weeklyChanges").innerHTML = categories
+          .map((category) => renderChangeCategory(category))
+          .join("");
+      }
+
+      function weeklyChangeCategories() {
         const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const grouped = new Map();
         state.history.forEach((item) => {
@@ -287,18 +308,61 @@
           const currentDelta = delta(first.current_price, last.current_price);
           const msrpDelta = delta(first.msrp_price, last.msrp_price);
           const newPromo = !first.promotion_status && Boolean(last.promotion_status);
-          if (currentDelta || msrpDelta || newPromo) changes.push({ last, currentDelta, msrpDelta, newPromo });
+          if (currentDelta || msrpDelta || newPromo) changes.push({ first, last, currentDelta, msrpDelta, newPromo });
         });
-        const stats = {
-          "售价降价": changes.filter((c) => c.currentDelta < 0).length,
-          "售价涨价": changes.filter((c) => c.currentDelta > 0).length,
-          "MSRP 降价": changes.filter((c) => c.msrpDelta < 0).length,
-          "MSRP 涨价": changes.filter((c) => c.msrpDelta > 0).length,
-          "新促销": changes.filter((c) => c.newPromo).length,
-        };
-        document.querySelector("#weeklyChanges").innerHTML = Object.entries(stats)
-          .map(([label, value]) => `<li><strong>${label}</strong><br><span class="muted">${value} 个商品</span></li>`)
-          .join("") || `<li class="muted">暂无本周异动</li>`;
+        return [
+          { label: "售价降价", rows: changes.filter((c) => c.currentDelta < 0), mode: "current" },
+          { label: "售价涨价", rows: changes.filter((c) => c.currentDelta > 0), mode: "current" },
+          { label: "MSRP 降价", rows: changes.filter((c) => c.msrpDelta < 0), mode: "msrp" },
+          { label: "MSRP 涨价", rows: changes.filter((c) => c.msrpDelta > 0), mode: "msrp" },
+          { label: "新促销", rows: changes.filter((c) => c.newPromo), mode: "promo" },
+        ];
+      }
+
+      function renderChangeCategory(category) {
+        const detail = category.rows.length
+          ? `<div class="change-detail">
+              <table class="change-table">
+                <thead>
+                  <tr>
+                    <th>ASIN</th>
+                    <th>类型</th>
+                    <th>款式</th>
+                    <th>型号</th>
+                    <th>变化前</th>
+                    <th>变化后</th>
+                    <th>时间</th>
+                  </tr>
+                </thead>
+                <tbody>${category.rows.map((row) => renderChangeRow(row, category.mode)).join("")}</tbody>
+              </table>
+            </div>`
+          : `<div class="change-detail muted">暂无商品</div>`;
+        return `<li>
+          <details>
+            <summary><span>${escapeHtml(category.label)}</span><span class="summary-count">${category.rows.length} 个商品</span></summary>
+            ${detail}
+          </details>
+        </li>`;
+      }
+
+      function renderChangeRow(change, mode) {
+        const first = change.first;
+        const last = change.last;
+        const asin = asinOf(last) || "-";
+        const before = mode === "msrp" ? price(first.msrp_price) : price(first.current_price);
+        const after = mode === "msrp" ? price(last.msrp_price) : price(last.current_price);
+        const beforeText = mode === "promo" ? (first.promotion_status || "-") : (before === null ? "-" : fmt.format(before));
+        const afterText = mode === "promo" ? (last.promotion_status || "-") : (after === null ? "-" : fmt.format(after));
+        return `<tr>
+          <td><a class="asin-link" href="${escapeHtml(last.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
+          <td>${escapeHtml(last.category || "-")}</td>
+          <td>${escapeHtml(last.style || "-")}</td>
+          <td>${escapeHtml(last.model || "-")}</td>
+          <td>${escapeHtml(beforeText)}</td>
+          <td>${escapeHtml(afterText)}</td>
+          <td class="muted">${escapeHtml(first.scraped_at?.slice(0, 10) || "-")} → ${escapeHtml(last.scraped_at?.slice(0, 10) || "-")}</td>
+        </tr>`;
       }
 
       function delta(a, b) {
@@ -312,7 +376,7 @@
         const rows = filteredProducts();
         renderMetrics(rows);
         renderTable(rows);
-        renderProductSelect(rows);
+        renderProductAsinOptions(rows);
         renderWeeklyChanges();
       }
 
@@ -334,8 +398,10 @@
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
         fillSelect("#styleFilter", state.latest.map((item) => item.style));
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
-        document.querySelectorAll("select,input").forEach((el) => el.addEventListener("input", render));
-        document.querySelector("#productSelect").addEventListener("change", renderChart);
+        ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#minPrice", "#maxPrice"]
+          .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
+        document.querySelector("#productAsinInput").addEventListener("input", renderChart);
+        document.querySelector("#productAsinInput").addEventListener("change", renderChart);
         render();
       }
 
