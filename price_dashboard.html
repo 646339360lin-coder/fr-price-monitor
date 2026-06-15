@@ -28,7 +28,7 @@
       .subtitle { margin: 0; color: var(--muted); }
       main { padding: 22px clamp(16px, 4vw, 48px) 42px; display: grid; gap: 18px; }
       section, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
-      .filters { display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+      .filters { display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 12px; align-items: end; }
       label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
       select, input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit; background: white; color: var(--text); }
       .metrics { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 12px; }
@@ -37,7 +37,7 @@
       .metric strong { font-size: 24px; }
       .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 18px; }
       .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-      table { width: 100%; border-collapse: collapse; min-width: 980px; }
+      table { width: 100%; border-collapse: collapse; min-width: 1240px; }
       th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
       th { background: #f1f4f8; color: #344055; position: sticky; top: 0; z-index: 1; }
       tr:hover td { background: #f9fbff; }
@@ -62,13 +62,14 @@
     <header>
       <p class="eyebrow">Amazon.fr Price Monitor</p>
       <h1>法国市场手机配件竞品价格监控</h1>
-      <p class="subtitle">覆盖 Tentoki 与核心竞品，支持品牌、品类、价格区间筛选和历史价格趋势。</p>
+      <p class="subtitle">覆盖产品清单中新品和正常在售 ASIN，支持类型、款式、型号、价格区间筛选和历史价格趋势。</p>
     </header>
 
     <main>
       <section class="filters">
         <label>品牌<select id="brandFilter"><option value="">全部品牌</option></select></label>
-        <label>品类<select id="categoryFilter"><option value="">全部品类</option></select></label>
+        <label>类型<select id="categoryFilter"><option value="">全部类型</option></select></label>
+        <label>款式<select id="styleFilter"><option value="">全部款式</option></select></label>
         <label>重点型号<select id="modelFilter"><option value="">全部型号</option></select></label>
         <label>最低价<input id="minPrice" type="number" min="0" step="0.01" placeholder="EUR" /></label>
         <label>最高价<input id="maxPrice" type="number" min="0" step="0.01" placeholder="EUR" /></label>
@@ -85,8 +86,11 @@
                 <tr>
                   <th>产品</th>
                   <th>品牌</th>
-                  <th>品类</th>
+                  <th>类型</th>
+                  <th>款式</th>
                   <th>型号</th>
+                  <th>规格</th>
+                  <th>手机品牌</th>
                   <th>当前价</th>
                   <th>MSRP</th>
                   <th>折扣</th>
@@ -140,6 +144,7 @@
       function filteredProducts() {
         const brand = document.querySelector("#brandFilter").value;
         const category = document.querySelector("#categoryFilter").value;
+        const style = document.querySelector("#styleFilter").value;
         const model = document.querySelector("#modelFilter").value;
         const min = price(document.querySelector("#minPrice").value);
         const max = price(document.querySelector("#maxPrice").value);
@@ -147,6 +152,7 @@
           const current = price(item.current_price);
           if (brand && item.brand !== brand) return false;
           if (category && item.category !== category) return false;
+          if (style && item.style !== style) return false;
           if (model && item.model !== model) return false;
           if (min !== null && (current === null || current < min)) return false;
           if (max !== null && (current === null || current > max)) return false;
@@ -197,7 +203,10 @@
             <td><a href="${item.product_url}" target="_blank" rel="noreferrer">${escapeHtml(item.product_name || item.asin || "未命名产品")}</a></td>
             <td>${escapeHtml(item.brand || "-")}</td>
             <td>${escapeHtml(item.category || "-")}</td>
+            <td>${escapeHtml(item.style || "-")}</td>
             <td>${escapeHtml(item.model || "-")}</td>
+            <td>${escapeHtml(item.spec || "-")}</td>
+            <td>${escapeHtml(item.phone_brand || "-")}</td>
             <td class="price">${current === null ? "-" : fmt.format(current)}${item.price_carried_forward ? `<br><span class="muted">沿用上次有效价</span>` : ""}</td>
             <td>${msrp === null ? "-" : fmt.format(msrp)}</td>
             <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
@@ -295,6 +304,7 @@
         state.history = history.products || state.latest;
         fillSelect("#brandFilter", state.latest.map((item) => item.brand));
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
+        fillSelect("#styleFilter", state.latest.map((item) => item.style));
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
         document.querySelectorAll("select,input").forEach((el) => el.addEventListener("input", render));
         document.querySelector("#productSelect").addEventListener("change", renderChart);

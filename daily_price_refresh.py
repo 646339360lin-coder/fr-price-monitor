@@ -27,6 +27,13 @@ USER_AGENT = (
 AMAZON_FR_HOST = "www.amazon.fr"
 CLEARANCE_WORDS = ("clearance", "déstockage", "destockage", "liquidation", "soldes")
 DEFAULT_POSTCODE = "06200"
+ROBOTS_CACHE: dict[str, urllib.robotparser.RobotFileParser | None] = {}
+RETRYABLE_STATUSES = {
+    "location_not_postcode",
+    "price_missing",
+    "timeout",
+    "page_not_found",
+}
 
 
 def utc_now_iso() -> str:
@@ -73,13 +80,18 @@ def extract_asin(url: str) -> str | None:
 def robots_allowed(url: str, user_agent: str = USER_AGENT) -> bool:
     parsed = urlparse(url)
     robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+    if robots_url in ROBOTS_CACHE:
+        parser = ROBOTS_CACHE[robots_url]
+        return bool(parser and parser.can_fetch(user_agent, url))
     parser = urllib.robotparser.RobotFileParser()
     parser.set_url(robots_url)
     try:
         parser.read()
     except Exception as exc:
         print(f"robots.txt unavailable for {parsed.netloc}: {exc}", file=sys.stderr)
+        ROBOTS_CACHE[robots_url] = None
         return False
+    ROBOTS_CACHE[robots_url] = parser
     return parser.can_fetch(user_agent, url)
 
 
@@ -104,6 +116,13 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         if exc.__class__.__name__ == "TimeoutError":
             return build_error_record(product, url, "timeout")
         return build_error_record(product, url, f"navigation_error: {exc}")
+
+    page_title = await page.title()
+    if "page introuvable" in page_title.lower():
+        record = build_error_record(product, url, "page_not_found")
+        record["observer_location"] = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+        record["page_title"] = page_title
+        return record
 
     html = await page.content()
     title = await safe_text(page, "#productTitle")
@@ -151,7 +170,16 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         "product_name": structured.get("name") or title or product.get("name"),
         "brand": structured.get("brand") or product.get("brand"),
         "category": product.get("category"),
+        "type": product.get("type") or product.get("category"),
+        "style": product.get("style"),
         "model": product.get("model"),
+        "spec": product.get("spec"),
+        "phone_brand": product.get("phone_brand"),
+        "sku": product.get("sku"),
+        "isku": product.get("isku"),
+        "fnsku": product.get("fnsku"),
+        "source_row": product.get("source_row"),
+        "product_status": product.get("product_status"),
         "current_price": current_price,
         "msrp_price": msrp_price,
         "currency": structured.get("currency") or "EUR",
@@ -509,6 +537,29 @@ def location_matches_postcode(location: str | None, postcode: str) -> bool:
     return bool(location and postcode and postcode in location)
 
 
+def product_key_for_product(product: dict[str, Any]) -> str:
+    return str(product.get("asin") or product.get("id") or extract_asin(product.get("url", "")) or product.get("url") or "")
+
+
+def product_key_for_result(record: dict[str, Any]) -> str:
+    return str(record.get("asin") or record.get("product_id") or record.get("product_url") or "")
+
+
+def retryable_status(status: Any) -> bool:
+    text = str(status or "")
+    return text in RETRYABLE_STATUSES or text.startswith("navigation_error") or text.startswith("unexpected_error")
+
+
+def should_replace_with_retry(previous: dict[str, Any], retry_record: dict[str, Any]) -> bool:
+    if retry_record.get("status") == "ok":
+        return True
+    if previous.get("status") == "location_not_postcode" and retry_record.get("status") != "location_not_postcode":
+        return True
+    if retry_record.get("status") == "page_not_found" and previous.get("status") != "ok":
+        return True
+    return False
+
+
 def build_error_record(product: dict[str, Any], url: str, status: str) -> dict[str, Any]:
     return {
         "product_id": product.get("id") or extract_asin(url) or url,
@@ -516,7 +567,16 @@ def build_error_record(product: dict[str, Any], url: str, status: str) -> dict[s
         "product_name": product.get("name"),
         "brand": product.get("brand"),
         "category": product.get("category"),
+        "type": product.get("type") or product.get("category"),
+        "style": product.get("style"),
         "model": product.get("model"),
+        "spec": product.get("spec"),
+        "phone_brand": product.get("phone_brand"),
+        "sku": product.get("sku"),
+        "isku": product.get("isku"),
+        "fnsku": product.get("fnsku"),
+        "source_row": product.get("source_row"),
+        "product_status": product.get("product_status"),
         "current_price": None,
         "msrp_price": None,
         "currency": "EUR",
@@ -595,6 +655,42 @@ async def run(args: argparse.Namespace) -> int:
         if browser and not external_cdp:
             await browser.close()
 
+        if args.retry_failures and not args.cdp_endpoint and not args.user_data_dir:
+            results_by_key = {product_key_for_result(record): record for record in results}
+            products_by_key = {product_key_for_product(product): product for product in products}
+            for retry_round in range(1, args.retry_failures + 1):
+                retry_products = [
+                    products_by_key[key]
+                    for key, record in results_by_key.items()
+                    if retryable_status(record.get("status")) and key in products_by_key
+                ]
+                if not retry_products:
+                    break
+                print(f"Retry round {retry_round}: {len(retry_products)} products")
+                retry_browser = await p.chromium.launch(headless=not args.headful)
+                retry_context = await retry_browser.new_context(**context_options)
+                retry_page = await retry_context.new_page()
+                if not args.skip_location:
+                    location = await set_delivery_postcode(retry_page, args.postcode)
+                    print(f"Amazon.fr retry delivery location: {location or 'not captured'}")
+                for index, product in enumerate(retry_products, start=1):
+                    url = normalize_product_url(product["url"])
+                    print(f"[retry {retry_round} {index}/{len(retry_products)}] {product.get('brand')} {product.get('model')} {url}")
+                    try:
+                        retry_record = await scrape_product(retry_page, product, dry_run=args.dry_run)
+                    except Exception as exc:
+                        retry_record = build_error_record(product, url, f"unexpected_error: {exc}")
+                        print(f"  retry unexpected error: {exc}", file=sys.stderr)
+                    key = product_key_for_result(retry_record)
+                    previous = results_by_key.get(key)
+                    if previous and should_replace_with_retry(previous, retry_record):
+                        results_by_key[key] = retry_record
+                    if index < len(retry_products):
+                        await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
+                await retry_context.close()
+                await retry_browser.close()
+            results = [results_by_key[product_key_for_product(product)] for product in products]
+
     latest = merge_price_results(results)
     ok_count = sum(1 for item in latest["products"] if item.get("status") == "ok")
     print(f"Wrote {len(latest['products'])} latest records, {ok_count} ok.")
@@ -614,6 +710,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--headful", action="store_true")
     parser.add_argument("--allow-empty", action="store_true", help="Exit 0 even when all prices are missing")
+    parser.add_argument("--retry-failures", type=int, default=2, help="Retry retryable failed products with a fresh browser context.")
     return parser.parse_args()
 
 
