@@ -38,11 +38,14 @@
       .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
       .metric strong { font-size: 24px; }
       .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-      table { width: 100%; border-collapse: collapse; min-width: 1500px; }
+      table { width: 100%; border-collapse: collapse; min-width: 1720px; }
       th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
       th { background: #f1f4f8; color: #344055; position: sticky; top: 0; z-index: 1; }
       tr:hover td { background: #f9fbff; }
       .asin-link { font-weight: 700; white-space: nowrap; }
+      .memo-cell { min-width: 220px; }
+      .memo-input { width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: inherit; color: var(--text); background: white; }
+      .memo-date { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
       .price { font-weight: 700; }
       .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; background: #eef2ff; color: #3730a3; }
       .badge.good { background: #ecfdf5; color: var(--good); }
@@ -105,6 +108,7 @@
                 <th>折扣</th>
                 <th>促销</th>
                 <th>状态</th>
+                <th>备忘</th>
                 <th>抓取时间</th>
               </tr>
             </thead>
@@ -129,7 +133,8 @@
     </main>
 
     <script>
-      const state = { latest: [], history: [], chart: null };
+      const NOTES_KEY = "amazon_fr_price_monitor_notes_v1";
+      const state = { latest: [], history: [], chart: null, notes: loadNotes() };
       const fmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
       function withCacheBust(url) {
@@ -144,6 +149,22 @@
         status.style.borderColor = isError ? "#fca5a5" : "#f59e0b";
         status.style.background = isError ? "#fef2f2" : "#fffbeb";
         status.style.color = isError ? "#991b1b" : "#92400e";
+      }
+
+      function todayStamp() {
+        return new Date().toLocaleDateString("sv-SE");
+      }
+
+      function loadNotes() {
+        try {
+          return JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function saveNotes() {
+        localStorage.setItem(NOTES_KEY, JSON.stringify(state.notes));
       }
 
       async function loadJson(url, fallback) {
@@ -230,6 +251,7 @@
           const msrp = price(item.msrp_price);
           const discount = Number(item.discount_percent);
           const asin = asinOf(item) || "-";
+          const note = state.notes[asin] || {};
           return `<tr>
             <td><a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
             <td>${escapeHtml(item.brand || "-")}</td>
@@ -243,6 +265,10 @@
             <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
             <td>${item.promotion_status ? `<span class="badge warn">${escapeHtml(item.promotion_status)}</span>` : "-"}</td>
             <td><span class="badge ${statusBadgeClass(item.status)}">${escapeHtml(item.status || "-")}</span></td>
+            <td class="memo-cell">
+              <textarea class="memo-input" data-asin="${escapeHtml(asin)}" placeholder="输入备忘">${escapeHtml(note.text || "")}</textarea>
+              <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
+            </td>
             <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
           </tr>`;
         }).join("");
@@ -400,6 +426,22 @@
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
         ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#minPrice", "#maxPrice"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
+        document.querySelector("#productRows").addEventListener("input", (event) => {
+          if (!event.target.classList.contains("memo-input")) return;
+          const asin = event.target.dataset.asin;
+          if (!asin) return;
+          const text = event.target.value;
+          const date = todayStamp();
+          const dateNode = event.target.parentElement.querySelector(".memo-date");
+          if (text.trim()) {
+            state.notes[asin] = { text, updated_at: date };
+            if (dateNode) dateNode.textContent = `更新：${date}`;
+          } else {
+            delete state.notes[asin];
+            if (dateNode) dateNode.textContent = "";
+          }
+          saveNotes();
+        });
         document.querySelector("#productAsinInput").addEventListener("input", renderChart);
         document.querySelector("#productAsinInput").addEventListener("change", renderChart);
         render();
