@@ -30,13 +30,18 @@
       section, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
       .data-status { display: none; border-color: #f59e0b; background: #fffbeb; color: #92400e; }
       .data-status.active { display: block; }
-      .filters { display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 12px; align-items: end; }
+      .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
       label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
       select, input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit; background: white; color: var(--text); }
       .metrics { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 12px; }
       .metric { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #fbfcfe; }
       .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
       .metric strong { font-size: 24px; }
+      .view-tabs { display: flex; flex-wrap: wrap; gap: 10px; background: transparent; border: 0; padding: 0; }
+      .tab-button { border: 1px solid var(--line); border-radius: 8px; padding: 10px 16px; background: var(--panel); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+      .tab-button.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+      .view-panel { display: none; }
+      .view-panel.active { display: block; }
       .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
       table { width: 100%; border-collapse: collapse; min-width: 1720px; }
       th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
@@ -58,12 +63,12 @@
       .summary-count { color: var(--muted); font-size: 20px; font-weight: 600; }
       .change-detail { padding: 0 16px 16px; overflow: auto; }
       .change-table { min-width: 860px; }
-      .chart-controls { max-width: 420px; margin-bottom: 14px; }
+      .chart-controls { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
       .chart-panel { min-height: 420px; }
       canvas { max-height: 320px; }
       a { color: var(--accent); text-decoration: none; }
       @media (max-width: 980px) {
-        .filters, .metrics { grid-template-columns: 1fr; }
+        .filters, .metrics, .chart-controls { grid-template-columns: 1fr; }
         table { min-width: 1180px; }
         main, header { padding-left: 14px; padding-right: 14px; }
       }
@@ -84,13 +89,20 @@
         <label>类型<select id="categoryFilter"><option value="">全部类型</option></select></label>
         <label>款式<select id="styleFilter"><option value="">全部款式</option></select></label>
         <label>重点型号<select id="modelFilter"><option value="">全部型号</option></select></label>
+        <label>自定义搜索<input id="searchQuery" type="search" placeholder="ASIN / 型号 / 款式 / 备注" /></label>
         <label>最低价<input id="minPrice" type="number" min="0" step="0.01" placeholder="EUR" /></label>
         <label>最高价<input id="maxPrice" type="number" min="0" step="0.01" placeholder="EUR" /></label>
       </section>
 
       <section class="metrics" id="metrics"></section>
 
-      <section>
+      <section class="view-tabs" aria-label="看板页面切换">
+        <button class="tab-button active" type="button" data-view="detailsView" aria-selected="true">商品明细</button>
+        <button class="tab-button" type="button" data-view="chartView" aria-selected="false">价格趋势</button>
+        <button class="tab-button" type="button" data-view="changesView" aria-selected="false">本周价格异动统计</button>
+      </section>
+
+      <section class="view-panel active" id="detailsView">
         <h2>商品明细</h2>
         <div class="table-wrap">
           <table>
@@ -117,16 +129,18 @@
         </div>
       </section>
 
-      <section class="chart-panel">
+      <section class="view-panel chart-panel" id="chartView">
         <h2>价格趋势</h2>
-        <label class="chart-controls">输入 ASIN
-          <input id="productAsinInput" list="asinOptions" placeholder="例如 B0FJS7782G" autocomplete="off" />
+        <div class="chart-controls">
+          <label>ASIN 1<input class="product-asin-input" list="asinOptions" placeholder="例如 B0FJS7782G" autocomplete="off" /></label>
+          <label>ASIN 2<input class="product-asin-input" list="asinOptions" placeholder="可选" autocomplete="off" /></label>
+          <label>ASIN 3<input class="product-asin-input" list="asinOptions" placeholder="可选" autocomplete="off" /></label>
           <datalist id="asinOptions"></datalist>
-        </label>
+        </div>
         <canvas id="priceChart"></canvas>
       </section>
 
-      <section>
+      <section class="view-panel" id="changesView">
         <h2>本周价格异动统计</h2>
         <ul class="summary-list" id="weeklyChanges"></ul>
       </section>
@@ -197,6 +211,7 @@
         const category = document.querySelector("#categoryFilter").value;
         const style = document.querySelector("#styleFilter").value;
         const model = document.querySelector("#modelFilter").value;
+        const search = document.querySelector("#searchQuery").value.trim().toLowerCase();
         const min = price(document.querySelector("#minPrice").value);
         const max = price(document.querySelector("#maxPrice").value);
         return state.latest.filter((item) => {
@@ -205,10 +220,29 @@
           if (category && item.category !== category) return false;
           if (style && item.style !== style) return false;
           if (model && item.model !== model) return false;
+          if (search && !searchText(item).includes(search)) return false;
           if (min !== null && (current === null || current < min)) return false;
           if (max !== null && (current === null || current > max)) return false;
           return true;
         });
+      }
+
+      function searchText(item) {
+        const asin = asinOf(item);
+        const note = state.notes[asin] || {};
+        return [
+          asin,
+          item.brand,
+          item.category,
+          item.style,
+          item.model,
+          item.spec,
+          item.phone_brand,
+          item.status,
+          item.promotion_status,
+          note.text,
+          note.updated_at,
+        ].filter(Boolean).join(" ").toLowerCase();
       }
 
       function fillSelect(selector, values) {
@@ -275,12 +309,11 @@
       }
 
       function renderProductAsinOptions(rows) {
-        const input = document.querySelector("#productAsinInput");
         const list = document.querySelector("#asinOptions");
-        const selected = input.value.trim();
         const asins = [...new Set(rows.map(asinOf).filter(Boolean))].sort();
         list.innerHTML = asins.map((asin) => `<option value="${escapeHtml(asin)}"></option>`).join("");
-        if (!selected || !asins.includes(selected)) input.value = asins[0] || "";
+        const inputs = [...document.querySelectorAll(".product-asin-input")];
+        if (!inputs.some((input) => input.value.trim()) && asins[0]) inputs[0].value = asins[0];
         renderChart();
       }
 
@@ -289,22 +322,36 @@
           showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
           return;
         }
-        const selected = document.querySelector("#productAsinInput").value.trim();
-        const points = state.history
-          .filter((item) => asinOf(item) === selected && price(item.current_price) !== null)
-          .sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
-        const labels = points.map((item) => item.scraped_at?.slice(0, 10) || "");
-        const current = points.map((item) => price(item.current_price));
-        const msrp = points.map((item) => price(item.msrp_price));
+        const selectedAsins = [...new Set([...document.querySelectorAll(".product-asin-input")]
+          .map((input) => input.value.trim())
+          .filter(Boolean))].slice(0, 3);
+        const series = selectedAsins.map((asin) => {
+          const points = state.history
+            .filter((item) => asinOf(item) === asin && price(item.current_price) !== null)
+            .sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
+          return { asin, points };
+        }).filter((item) => item.points.length);
+        const labels = [...new Set(series.flatMap((item) => item.points.map((point) => point.scraped_at?.slice(0, 10) || "")))]
+          .filter(Boolean)
+          .sort();
+        const colors = ["#2563eb", "#dc2626", "#047857"];
+        const datasets = series.map((item, index) => {
+          const byDate = new Map(item.points.map((point) => [point.scraped_at?.slice(0, 10) || "", price(point.current_price)]));
+          return {
+            label: item.asin,
+            data: labels.map((label) => byDate.has(label) ? byDate.get(label) : null),
+            borderColor: colors[index],
+            backgroundColor: colors[index],
+            tension: 0.25,
+            spanGaps: true,
+          };
+        });
         if (state.chart) state.chart.destroy();
         state.chart = new Chart(document.querySelector("#priceChart"), {
           type: "line",
           data: {
             labels,
-            datasets: [
-              { label: "当前售价", data: current, borderColor: "#2563eb", backgroundColor: "#2563eb", tension: 0.25 },
-              { label: "MSRP", data: msrp, borderColor: "#b45309", backgroundColor: "#b45309", tension: 0.25 },
-            ],
+            datasets,
           },
           options: { responsive: true, scales: { y: { ticks: { callback: (value) => fmt.format(value) } } } },
         });
@@ -406,6 +453,16 @@
         renderWeeklyChanges();
       }
 
+      function switchView(viewId) {
+        document.querySelectorAll(".view-panel").forEach((panel) => panel.classList.toggle("active", panel.id === viewId));
+        document.querySelectorAll(".tab-button").forEach((button) => {
+          const active = button.dataset.view === viewId;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-selected", String(active));
+        });
+        if (viewId === "chartView") renderChart();
+      }
+
       function escapeHtml(value) {
         return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
       }
@@ -424,8 +481,11 @@
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
         fillSelect("#styleFilter", state.latest.map((item) => item.style));
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
-        ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#minPrice", "#maxPrice"]
+        ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#searchQuery", "#minPrice", "#maxPrice"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
+        document.querySelectorAll(".tab-button").forEach((button) => {
+          button.addEventListener("click", () => switchView(button.dataset.view));
+        });
         document.querySelector("#productRows").addEventListener("input", (event) => {
           if (!event.target.classList.contains("memo-input")) return;
           const asin = event.target.dataset.asin;
@@ -442,8 +502,10 @@
           }
           saveNotes();
         });
-        document.querySelector("#productAsinInput").addEventListener("input", renderChart);
-        document.querySelector("#productAsinInput").addEventListener("change", renderChart);
+        document.querySelectorAll(".product-asin-input").forEach((input) => {
+          input.addEventListener("input", renderChart);
+          input.addEventListener("change", renderChart);
+        });
         render();
       }
 
