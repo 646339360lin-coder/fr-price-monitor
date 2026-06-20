@@ -157,6 +157,7 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
 
     promo = await extract_promotion_status(page)
     availability = await safe_text(page, "#availability, #outOfStock")
+    image_url = await extract_main_image(page)
     observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
     location_valid = location_matches_postcode(observer_location, observer_postcode)
     if not location_valid:
@@ -185,6 +186,7 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         "currency": structured.get("currency") or "EUR",
         "promotion_status": promo,
         "availability": availability,
+        "image_url": image_url,
         "product_url": url,
         "scraped_at": utc_now_iso(),
         "source": "amazon.fr",
@@ -315,6 +317,26 @@ async def extract_promotion_status(page: "Page") -> str | None:
         if text:
             chunks.append(text)
     return " | ".join(dict.fromkeys(chunks)) or None
+
+
+async def extract_main_image(page: "Page") -> str | None:
+    selectors = [
+        "#landingImage",
+        "#imgTagWrapperId img",
+        "#main-image-container img",
+    ]
+    for selector in selectors:
+        try:
+            locator = page.locator(selector).first
+            if await locator.count() == 0:
+                continue
+            for attr in ("src", "data-old-hires"):
+                value = await locator.get_attribute(attr, timeout=2000)
+                if value and value.startswith("http"):
+                    return value
+        except Exception:
+            continue
+    return None
 
 
 async def safe_text(page: "Page", selector: str) -> str | None:

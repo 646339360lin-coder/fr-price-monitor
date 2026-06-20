@@ -49,6 +49,8 @@ jobs:
           cp price_dashboard.html public/price_dashboard.html
           cp price_results_latest.json public/price_results_latest.json
           cp price_history.json public/price_history.json
+          cp competitor_results_latest.json public/competitor_results_latest.json
+          cp competitor_history.json public/competitor_history.json
 
       - name: Commit refreshed JSON
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -82,6 +84,8 @@ jobs:
           cp price_dashboard.html public/price_dashboard.html
           cp price_results_latest.json public/price_results_latest.json
           cp price_history.json public/price_history.json
+          cp competitor_results_latest.json public/competitor_results_latest.json
+          cp competitor_history.json public/competitor_history.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

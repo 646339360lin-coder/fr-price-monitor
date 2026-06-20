@@ -43,13 +43,20 @@
       .view-panel { display: none; }
       .view-panel.active { display: block; }
       .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-      table { width: 100%; border-collapse: collapse; min-width: 1720px; }
+      table { width: 100%; border-collapse: collapse; min-width: 1860px; }
       th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
       th { background: #f1f4f8; color: #344055; position: sticky; top: 0; z-index: 1; }
       tr:hover td { background: #f9fbff; }
       .asin-link { font-weight: 700; white-space: nowrap; }
+      .focus-cell { min-width: 92px; }
+      .focus-label { display: inline-flex; grid-template-columns: none; gap: 6px; align-items: center; color: var(--text); font-size: 13px; font-weight: 700; }
+      .focus-checkbox { width: auto; }
+      .thumb { width: 54px; height: 54px; object-fit: contain; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+      .thumb-placeholder { width: 54px; height: 54px; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 6px; color: var(--muted); font-size: 12px; }
       .memo-cell { min-width: 220px; }
       .memo-input { width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: inherit; color: var(--text); background: white; }
+      .memo-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+      .memo-save { border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; background: #f8fafc; color: var(--text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
       .memo-date { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
       .price { font-weight: 700; }
       .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; background: #eef2ff; color: #3730a3; }
@@ -98,6 +105,8 @@
 
       <section class="view-tabs" aria-label="看板页面切换">
         <button class="tab-button active" type="button" data-view="detailsView" aria-selected="true">商品明细</button>
+        <button class="tab-button" type="button" data-view="focusView" aria-selected="false">重点关注</button>
+        <button class="tab-button" type="button" data-view="competitorView" aria-selected="false">竞品跟踪</button>
         <button class="tab-button" type="button" data-view="chartView" aria-selected="false">价格趋势</button>
         <button class="tab-button" type="button" data-view="changesView" aria-selected="false">本周价格异动统计</button>
       </section>
@@ -109,6 +118,7 @@
             <thead>
               <tr>
                 <th>ASIN</th>
+                <th>重点关注</th>
                 <th>品牌</th>
                 <th>类型</th>
                 <th>款式</th>
@@ -125,6 +135,61 @@
               </tr>
             </thead>
             <tbody id="productRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel" id="focusView">
+        <h2>重点关注</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ASIN</th>
+                <th>重点关注</th>
+                <th>品牌</th>
+                <th>类型</th>
+                <th>款式</th>
+                <th>型号</th>
+                <th>规格</th>
+                <th>手机品牌</th>
+                <th>当前价</th>
+                <th>MSRP</th>
+                <th>折扣</th>
+                <th>促销</th>
+                <th>状态</th>
+                <th>备忘</th>
+                <th>抓取时间</th>
+              </tr>
+            </thead>
+            <tbody id="focusRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel" id="competitorView">
+        <h2>竞品跟踪</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>主图</th>
+                <th>ASIN</th>
+                <th>品牌</th>
+                <th>类型</th>
+                <th>款式</th>
+                <th>型号</th>
+                <th>规格</th>
+                <th>手机品牌</th>
+                <th>当前价</th>
+                <th>MSRP</th>
+                <th>折扣</th>
+                <th>促销</th>
+                <th>状态</th>
+                <th>抓取时间</th>
+              </tr>
+            </thead>
+            <tbody id="competitorRows"></tbody>
           </table>
         </div>
       </section>
@@ -148,7 +213,8 @@
 
     <script>
       const NOTES_KEY = "amazon_fr_price_monitor_notes_v1";
-      const state = { latest: [], history: [], chart: null, notes: loadNotes() };
+      const FOCUS_KEY = "amazon_fr_price_monitor_focus_v1";
+      const state = { latest: [], history: [], competitors: [], chart: null, notes: loadNotes(), focused: loadFocus() };
       const fmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
       function withCacheBust(url) {
@@ -181,6 +247,18 @@
         localStorage.setItem(NOTES_KEY, JSON.stringify(state.notes));
       }
 
+      function loadFocus() {
+        try {
+          return new Set(JSON.parse(localStorage.getItem(FOCUS_KEY) || "[]"));
+        } catch {
+          return new Set();
+        }
+      }
+
+      function saveFocus() {
+        localStorage.setItem(FOCUS_KEY, JSON.stringify([...state.focused]));
+      }
+
       async function loadJson(url, fallback) {
         try {
           const res = await fetch(withCacheBust(url), { cache: "no-store" });
@@ -188,6 +266,16 @@
           return await res.json();
         } catch (error) {
           showStatus(`数据文件读取失败：${error.message}。请确认打开的是 GitHub Pages 根地址，并刷新页面。`, true);
+          return fallback;
+        }
+      }
+
+      async function loadOptionalJson(url, fallback) {
+        try {
+          const res = await fetch(withCacheBust(url), { cache: "no-store" });
+          if (!res.ok) return fallback;
+          return await res.json();
+        } catch {
           return fallback;
         }
       }
@@ -206,7 +294,7 @@
         return Number.isFinite(number) ? number : null;
       }
 
-      function filteredProducts() {
+      function filteredProducts(rows = state.latest) {
         const brand = document.querySelector("#brandFilter").value;
         const category = document.querySelector("#categoryFilter").value;
         const style = document.querySelector("#styleFilter").value;
@@ -214,7 +302,7 @@
         const search = document.querySelector("#searchQuery").value.trim().toLowerCase();
         const min = price(document.querySelector("#minPrice").value);
         const max = price(document.querySelector("#maxPrice").value);
-        return state.latest.filter((item) => {
+        return rows.filter((item) => {
           const current = price(item.current_price);
           if (brand && item.brand !== brand) return false;
           if (category && item.category !== category) return false;
@@ -279,15 +367,21 @@
         return "bad";
       }
 
-      function renderTable(rows) {
-        document.querySelector("#productRows").innerHTML = rows.map((item) => {
+      function renderTable(rows, selector = "#productRows", options = {}) {
+        const showFocus = options.showFocus !== false;
+        const showImage = Boolean(options.showImage);
+        const showMemo = options.showMemo !== false;
+        const emptyMessage = options.emptyMessage || "暂无数据";
+        document.querySelector(selector).innerHTML = rows.length ? rows.map((item) => {
           const current = price(item.current_price);
           const msrp = price(item.msrp_price);
           const discount = Number(item.discount_percent);
           const asin = asinOf(item) || "-";
           const note = state.notes[asin] || {};
           return `<tr>
+            ${showImage ? `<td>${renderThumb(item)}</td>` : ""}
             <td><a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
+            ${showFocus ? `<td class="focus-cell"><label class="focus-label"><input class="focus-checkbox" type="checkbox" data-asin="${escapeHtml(asin)}" ${state.focused.has(asin) ? "checked" : ""}>关注</label></td>` : ""}
             <td>${escapeHtml(item.brand || "-")}</td>
             <td>${escapeHtml(item.category || "-")}</td>
             <td>${escapeHtml(item.style || "-")}</td>
@@ -299,13 +393,23 @@
             <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
             <td>${item.promotion_status ? `<span class="badge warn">${escapeHtml(item.promotion_status)}</span>` : "-"}</td>
             <td><span class="badge ${statusBadgeClass(item.status)}">${escapeHtml(item.status || "-")}</span></td>
+            ${showMemo ? `
             <td class="memo-cell">
               <textarea class="memo-input" data-asin="${escapeHtml(asin)}" placeholder="输入备忘">${escapeHtml(note.text || "")}</textarea>
-              <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
-            </td>
+              <div class="memo-actions">
+                <button class="memo-save" type="button" data-asin="${escapeHtml(asin)}">保存</button>
+                <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
+              </div>
+            </td>` : ""}
             <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
           </tr>`;
-        }).join("");
+        }).join("") : `<tr><td class="muted" colspan="16">${escapeHtml(emptyMessage)}</td></tr>`;
+      }
+
+      function renderThumb(item) {
+        const image = item.image_url || item.main_image_url || item.thumbnail_url;
+        if (!image) return `<span class="thumb-placeholder">无图</span>`;
+        return `<img class="thumb" src="${escapeHtml(image)}" alt="${escapeHtml(asinOf(item) || "竞品主图")}" loading="lazy">`;
       }
 
       function renderProductAsinOptions(rows) {
@@ -447,8 +551,12 @@
 
       function render() {
         const rows = filteredProducts();
+        const focusRows = rows.filter((item) => state.focused.has(asinOf(item)));
+        const competitorRows = filteredProducts(state.competitors);
         renderMetrics(rows);
         renderTable(rows);
+        renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
+        renderTable(competitorRows, "#competitorRows", { showFocus: false, showImage: true, showMemo: false, emptyMessage: "还没有竞品数据。后续导入竞品 ASIN 后会显示在这里。" });
         renderProductAsinOptions(rows);
         renderWeeklyChanges();
       }
@@ -470,8 +578,10 @@
       async function init() {
         const latest = await loadJson("price_results_latest.json", { products: [] });
         const history = await loadJson("price_history.json", { products: [] });
+        const competitors = await loadOptionalJson("competitor_results_latest.json", { products: [] });
         state.latest = latest.products || [];
         state.history = history.products || state.latest;
+        state.competitors = competitors.products || [];
         if (state.latest.length) {
           showStatus("");
         } else {
@@ -486,13 +596,27 @@
         document.querySelectorAll(".tab-button").forEach((button) => {
           button.addEventListener("click", () => switchView(button.dataset.view));
         });
-        document.querySelector("#productRows").addEventListener("input", (event) => {
-          if (!event.target.classList.contains("memo-input")) return;
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("focus-checkbox")) return;
           const asin = event.target.dataset.asin;
           if (!asin) return;
-          const text = event.target.value;
+          if (event.target.checked) {
+            state.focused.add(asin);
+          } else {
+            state.focused.delete(asin);
+          }
+          saveFocus();
+          render();
+        });
+        document.addEventListener("click", (event) => {
+          if (!event.target.classList.contains("memo-save")) return;
+          const asin = event.target.dataset.asin;
+          if (!asin) return;
+          const cell = event.target.closest(".memo-cell");
+          const input = cell?.querySelector(".memo-input");
+          const dateNode = cell?.querySelector(".memo-date");
+          const text = input?.value || "";
           const date = todayStamp();
-          const dateNode = event.target.parentElement.querySelector(".memo-date");
           if (text.trim()) {
             state.notes[asin] = { text, updated_at: date };
             if (dateNode) dateNode.textContent = `更新：${date}`;
@@ -501,6 +625,10 @@
             if (dateNode) dateNode.textContent = "";
           }
           saveNotes();
+          event.target.textContent = "已保存";
+          setTimeout(() => {
+            event.target.textContent = "保存";
+          }, 1200);
         });
         document.querySelectorAll(".product-asin-input").forEach((input) => {
           input.addEventListener("input", renderChart);
