@@ -58,6 +58,14 @@
       .memo-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
       .memo-save { border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; background: #f8fafc; color: var(--text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
       .memo-date { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
+      .opportunity-filters { display: grid; grid-template-columns: minmax(180px, 240px) minmax(220px, 1fr) minmax(180px, 240px); gap: 12px; margin-bottom: 14px; }
+      .opportunity-table { min-width: 1180px; }
+      .opportunity-check { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+      .opportunity-check input { width: auto; }
+      .asin-list { display: grid; gap: 4px; }
+      .memo-stack { display: grid; gap: 10px; min-width: 260px; }
+      .memo-stack-item { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+      .memo-stack-item:last-child { border-bottom: 0; padding-bottom: 0; }
       .price { font-weight: 700; }
       .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; background: #eef2ff; color: #3730a3; }
       .badge.good { background: #ecfdf5; color: var(--good); }
@@ -107,6 +115,7 @@
         <button class="tab-button active" type="button" data-view="detailsView" aria-selected="true">商品明细</button>
         <button class="tab-button" type="button" data-view="focusView" aria-selected="false">重点关注</button>
         <button class="tab-button" type="button" data-view="competitorView" aria-selected="false">竞品跟踪</button>
+        <button class="tab-button" type="button" data-view="shellOpportunityView" aria-selected="false">清水壳机会跟踪</button>
         <button class="tab-button" type="button" data-view="chartView" aria-selected="false">价格趋势</button>
         <button class="tab-button" type="button" data-view="changesView" aria-selected="false">本周价格异动统计</button>
       </section>
@@ -194,6 +203,39 @@
         </div>
       </section>
 
+      <section class="view-panel" id="shellOpportunityView">
+        <h2>清水壳机会跟踪</h2>
+        <div class="opportunity-filters">
+          <label>品牌<select id="shellBrandFilter"><option value="">全部品牌</option></select></label>
+          <label>型号搜索<input id="shellModelSearch" type="search" placeholder="输入型号关键词" /></label>
+          <label>状态筛选
+            <select id="shellStatusFilter">
+              <option value="">全部</option>
+              <option value="single">清水壳-单壳</option>
+              <option value="threeInOne">清水壳-3in1</option>
+              <option value="breakthrough">待突破</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table class="opportunity-table">
+            <thead>
+              <tr>
+                <th>品牌</th>
+                <th>型号</th>
+                <th>清水壳-单壳</th>
+                <th>清水壳-3in1</th>
+                <th>待突破</th>
+                <th>对应 ASIN</th>
+                <th>单壳备忘</th>
+                <th>3in1备忘</th>
+              </tr>
+            </thead>
+            <tbody id="shellOpportunityRows"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="view-panel chart-panel" id="chartView">
         <h2>价格趋势</h2>
         <div class="chart-controls">
@@ -214,7 +256,17 @@
     <script>
       const NOTES_KEY = "amazon_fr_price_monitor_notes_v1";
       const FOCUS_KEY = "amazon_fr_price_monitor_focus_v1";
-      const state = { latest: [], history: [], competitors: [], chart: null, notes: loadNotes(), focused: loadFocus() };
+      const SHELL_OPPORTUNITY_KEY = "amazon_fr_price_monitor_shell_opportunity_v1";
+      const SHELL_TYPES = ["清水壳-单壳", "清水壳-3in1"];
+      const state = {
+        latest: [],
+        history: [],
+        competitors: [],
+        chart: null,
+        notes: loadNotes(),
+        focused: loadFocus(),
+        shellOpportunity: loadShellOpportunity(),
+      };
       const fmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
       function withCacheBust(url) {
@@ -247,6 +299,28 @@
         localStorage.setItem(NOTES_KEY, JSON.stringify(state.notes));
       }
 
+      function saveMemoForButton(button) {
+        const asin = button.dataset.asin;
+        if (!asin) return;
+        const cell = button.closest(".memo-cell, .memo-stack-item");
+        const input = cell?.querySelector(".memo-input");
+        const dateNode = cell?.querySelector(".memo-date");
+        const text = input?.value || "";
+        const date = todayStamp();
+        if (text.trim()) {
+          state.notes[asin] = { text, updated_at: date };
+          if (dateNode) dateNode.textContent = `更新：${date}`;
+        } else {
+          delete state.notes[asin];
+          if (dateNode) dateNode.textContent = "";
+        }
+        saveNotes();
+        button.textContent = "已保存";
+        setTimeout(() => {
+          button.textContent = "保存";
+        }, 1200);
+      }
+
       function loadFocus() {
         try {
           return new Set(JSON.parse(localStorage.getItem(FOCUS_KEY) || "[]"));
@@ -257,6 +331,18 @@
 
       function saveFocus() {
         localStorage.setItem(FOCUS_KEY, JSON.stringify([...state.focused]));
+      }
+
+      function loadShellOpportunity() {
+        try {
+          return JSON.parse(localStorage.getItem(SHELL_OPPORTUNITY_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function saveShellOpportunity() {
+        localStorage.setItem(SHELL_OPPORTUNITY_KEY, JSON.stringify(state.shellOpportunity));
       }
 
       async function loadJson(url, fallback) {
@@ -333,6 +419,47 @@
         ].filter(Boolean).join(" ").toLowerCase();
       }
 
+      function shellGroupKey(brand, model) {
+        return `${brand || "-"}||${model || "-"}`;
+      }
+
+      function shellOpportunityGroups() {
+        const groups = new Map();
+        state.latest.forEach((item) => {
+          const category = item.category || item.type;
+          if (!SHELL_TYPES.includes(category)) return;
+          const brand = item.brand || "-";
+          const model = item.model || "-";
+          const key = shellGroupKey(brand, model);
+          if (!groups.has(key)) {
+            groups.set(key, {
+              key,
+              brand,
+              model,
+              single: [],
+              threeInOne: [],
+            });
+          }
+          const group = groups.get(key);
+          if (category === "清水壳-单壳") group.single.push(item);
+          if (category === "清水壳-3in1") group.threeInOne.push(item);
+        });
+        return [...groups.values()].sort((a, b) => `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`, "zh-Hans-CN"));
+      }
+
+      function filteredShellOpportunityGroups() {
+        const brand = document.querySelector("#shellBrandFilter").value;
+        const search = document.querySelector("#shellModelSearch").value.trim().toLowerCase();
+        const status = document.querySelector("#shellStatusFilter").value;
+        return shellOpportunityGroups().filter((group) => {
+          const record = state.shellOpportunity[group.key] || {};
+          if (brand && group.brand !== brand) return false;
+          if (search && !`${group.brand} ${group.model}`.toLowerCase().includes(search)) return false;
+          if (status && !record[status]) return false;
+          return true;
+        });
+      }
+
       function fillSelect(selector, values) {
         const select = document.querySelector(selector);
         const current = select.value;
@@ -404,6 +531,46 @@
             <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
           </tr>`;
         }).join("") : `<tr><td class="muted" colspan="16">${escapeHtml(emptyMessage)}</td></tr>`;
+      }
+
+      function renderShellOpportunity() {
+        const rows = filteredShellOpportunityGroups();
+        const body = document.querySelector("#shellOpportunityRows");
+        body.innerHTML = rows.length ? rows.map((group) => {
+          const record = state.shellOpportunity[group.key] || {};
+          return `<tr>
+            <td>${escapeHtml(group.brand)}</td>
+            <td>${escapeHtml(group.model)}</td>
+            <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="single" ${record.single ? "checked" : ""}>单壳</label></td>
+            <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="threeInOne" ${record.threeInOne ? "checked" : ""}>3in1</label></td>
+            <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="breakthrough" ${record.breakthrough ? "checked" : ""}>待突破</label></td>
+            <td>${renderShellAsins(group)}</td>
+            <td>${renderShellMemos(group.single)}</td>
+            <td>${renderShellMemos(group.threeInOne)}</td>
+          </tr>`;
+        }).join("") : `<tr><td class="muted" colspan="8">暂无匹配型号</td></tr>`;
+      }
+
+      function renderShellAsins(group) {
+        const single = group.single.map((item) => `<span>单壳：<a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asinOf(item) || "-")}</a></span>`).join("");
+        const threeInOne = group.threeInOne.map((item) => `<span>3in1：<a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asinOf(item) || "-")}</a></span>`).join("");
+        return `<div class="asin-list">${single || ""}${threeInOne || ""}</div>`;
+      }
+
+      function renderShellMemos(products) {
+        if (!products.length) return `<span class="muted">【无上新ASIN】</span>`;
+        return `<div class="memo-stack">${products.map((item) => {
+          const asin = asinOf(item) || "-";
+          const note = state.notes[asin] || {};
+          return `<div class="memo-stack-item">
+            <div class="muted">${escapeHtml(item.category || item.type || "-")} ${escapeHtml(asin)}</div>
+            <textarea class="memo-input" data-asin="${escapeHtml(asin)}" placeholder="同步商品明细备忘">${escapeHtml(note.text || "")}</textarea>
+            <div class="memo-actions">
+              <button class="memo-save" type="button" data-asin="${escapeHtml(asin)}">保存</button>
+              <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
+            </div>
+          </div>`;
+        }).join("")}</div>`;
       }
 
       function renderThumb(item) {
@@ -557,6 +724,7 @@
         renderTable(rows);
         renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
         renderTable(competitorRows, "#competitorRows", { showFocus: false, showImage: true, showMemo: false, emptyMessage: "还没有竞品数据。后续导入竞品 ASIN 后会显示在这里。" });
+        renderShellOpportunity();
         renderProductAsinOptions(rows);
         renderWeeklyChanges();
       }
@@ -591,8 +759,11 @@
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
         fillSelect("#styleFilter", state.latest.map((item) => item.style));
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
+        fillSelect("#shellBrandFilter", shellOpportunityGroups().map((item) => item.brand));
         ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#searchQuery", "#minPrice", "#maxPrice"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
+        ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
+          .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
         document.querySelectorAll(".tab-button").forEach((button) => {
           button.addEventListener("click", () => switchView(button.dataset.view));
         });
@@ -608,27 +779,19 @@
           saveFocus();
           render();
         });
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("shell-opportunity-checkbox")) return;
+          const key = event.target.dataset.key;
+          const field = event.target.dataset.field;
+          if (!key || !field) return;
+          if (!state.shellOpportunity[key]) state.shellOpportunity[key] = {};
+          state.shellOpportunity[key][field] = event.target.checked;
+          saveShellOpportunity();
+          renderShellOpportunity();
+        });
         document.addEventListener("click", (event) => {
           if (!event.target.classList.contains("memo-save")) return;
-          const asin = event.target.dataset.asin;
-          if (!asin) return;
-          const cell = event.target.closest(".memo-cell");
-          const input = cell?.querySelector(".memo-input");
-          const dateNode = cell?.querySelector(".memo-date");
-          const text = input?.value || "";
-          const date = todayStamp();
-          if (text.trim()) {
-            state.notes[asin] = { text, updated_at: date };
-            if (dateNode) dateNode.textContent = `更新：${date}`;
-          } else {
-            delete state.notes[asin];
-            if (dateNode) dateNode.textContent = "";
-          }
-          saveNotes();
-          event.target.textContent = "已保存";
-          setTimeout(() => {
-            event.target.textContent = "保存";
-          }, 1200);
+          saveMemoForButton(event.target);
         });
         document.querySelectorAll(".product-asin-input").forEach((input) => {
           input.addEventListener("input", renderChart);
