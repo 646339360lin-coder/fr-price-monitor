@@ -420,8 +420,10 @@
       }
 
       async function loadSourceProductList() {
-        const local = await loadOptionalJson("product_list.json", null);
-        const source = local || await loadOptionalJson(PRODUCT_LIST_RAW_URL, { products: [] });
+        const isPages = window.location.hostname.endsWith("github.io");
+        const source = isPages
+          ? await loadOptionalJson(PRODUCT_LIST_RAW_URL, { products: [] })
+          : await loadOptionalJson("product_list.json", { products: [] });
         const products = Array.isArray(source.products) ? source.products : [];
         const draft = loadSourceDraft();
         state.sourceMeta = { ...source, products: undefined };
