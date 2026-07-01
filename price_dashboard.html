@@ -227,7 +227,8 @@
                 <th>清水壳-3in1</th>
                 <th>待突破</th>
                 <th>对应 ASIN</th>
-                <th>备忘</th>
+                <th>单壳备忘</th>
+                <th>3in1备忘</th>
               </tr>
             </thead>
             <tbody id="shellOpportunityRows"></tbody>
@@ -537,7 +538,6 @@
         const body = document.querySelector("#shellOpportunityRows");
         body.innerHTML = rows.length ? rows.map((group) => {
           const record = state.shellOpportunity[group.key] || {};
-          const products = [...group.single, ...group.threeInOne];
           return `<tr>
             <td>${escapeHtml(group.brand)}</td>
             <td>${escapeHtml(group.model)}</td>
@@ -545,9 +545,10 @@
             <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="threeInOne" ${record.threeInOne ? "checked" : ""}>3in1</label></td>
             <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="breakthrough" ${record.breakthrough ? "checked" : ""}>待突破</label></td>
             <td>${renderShellAsins(group)}</td>
-            <td>${renderShellMemos(products)}</td>
+            <td>${renderShellMemos(group.single)}</td>
+            <td>${renderShellMemos(group.threeInOne)}</td>
           </tr>`;
-        }).join("") : `<tr><td class="muted" colspan="7">暂无匹配型号</td></tr>`;
+        }).join("") : `<tr><td class="muted" colspan="8">暂无匹配型号</td></tr>`;
       }
 
       function renderShellAsins(group) {
@@ -557,6 +558,7 @@
       }
 
       function renderShellMemos(products) {
+        if (!products.length) return `<span class="muted">【无上新ASIN】</span>`;
         return `<div class="memo-stack">${products.map((item) => {
           const asin = asinOf(item) || "-";
           const note = state.notes[asin] || {};
