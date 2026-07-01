@@ -206,7 +206,7 @@
       <section class="view-panel" id="shellOpportunityView">
         <h2>清水壳机会跟踪</h2>
         <div class="opportunity-filters">
-          <label>品牌<select id="shellBrandFilter"><option value="">全部品牌</option></select></label>
+          <label>手机品牌<select id="shellBrandFilter"><option value="">全部手机品牌</option></select></label>
           <label>型号搜索<input id="shellModelSearch" type="search" placeholder="输入型号关键词" /></label>
           <label>状态筛选
             <select id="shellStatusFilter">
@@ -221,7 +221,7 @@
           <table class="opportunity-table">
             <thead>
               <tr>
-                <th>品牌</th>
+                <th>手机品牌</th>
                 <th>型号</th>
                 <th>清水壳-单壳</th>
                 <th>清水壳-3in1</th>
@@ -419,8 +419,8 @@
         ].filter(Boolean).join(" ").toLowerCase();
       }
 
-      function shellGroupKey(brand, model) {
-        return `${brand || "-"}||${model || "-"}`;
+      function shellGroupKey(phoneBrand, model) {
+        return `${phoneBrand || "-"}||${model || "-"}`;
       }
 
       function shellOpportunityGroups() {
@@ -428,13 +428,13 @@
         state.latest.forEach((item) => {
           const category = item.category || item.type;
           if (!SHELL_TYPES.includes(category)) return;
-          const brand = item.brand || "-";
+          const phoneBrand = item.phone_brand || "-";
           const model = item.model || "-";
-          const key = shellGroupKey(brand, model);
+          const key = shellGroupKey(phoneBrand, model);
           if (!groups.has(key)) {
             groups.set(key, {
               key,
-              brand,
+              phoneBrand,
               model,
               single: [],
               threeInOne: [],
@@ -444,17 +444,17 @@
           if (category === "清水壳-单壳") group.single.push(item);
           if (category === "清水壳-3in1") group.threeInOne.push(item);
         });
-        return [...groups.values()].sort((a, b) => `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`, "zh-Hans-CN"));
+        return [...groups.values()].sort((a, b) => `${a.phoneBrand} ${a.model}`.localeCompare(`${b.phoneBrand} ${b.model}`, "zh-Hans-CN"));
       }
 
       function filteredShellOpportunityGroups() {
-        const brand = document.querySelector("#shellBrandFilter").value;
+        const phoneBrand = document.querySelector("#shellBrandFilter").value;
         const search = document.querySelector("#shellModelSearch").value.trim().toLowerCase();
         const status = document.querySelector("#shellStatusFilter").value;
         return shellOpportunityGroups().filter((group) => {
           const record = state.shellOpportunity[group.key] || {};
-          if (brand && group.brand !== brand) return false;
-          if (search && !`${group.brand} ${group.model}`.toLowerCase().includes(search)) return false;
+          if (phoneBrand && group.phoneBrand !== phoneBrand) return false;
+          if (search && !`${group.phoneBrand} ${group.model}`.toLowerCase().includes(search)) return false;
           if (status && !record[status]) return false;
           return true;
         });
@@ -539,7 +539,7 @@
         body.innerHTML = rows.length ? rows.map((group) => {
           const record = state.shellOpportunity[group.key] || {};
           return `<tr>
-            <td>${escapeHtml(group.brand)}</td>
+            <td>${escapeHtml(group.phoneBrand)}</td>
             <td>${escapeHtml(group.model)}</td>
             <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="single" ${record.single ? "checked" : ""}>单壳</label></td>
             <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="threeInOne" ${record.threeInOne ? "checked" : ""}>3in1</label></td>
@@ -759,7 +759,7 @@
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
         fillSelect("#styleFilter", state.latest.map((item) => item.style));
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
-        fillSelect("#shellBrandFilter", shellOpportunityGroups().map((item) => item.brand));
+        fillSelect("#shellBrandFilter", shellOpportunityGroups().map((item) => item.phoneBrand));
         ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#searchQuery", "#minPrice", "#maxPrice"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
         ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
