@@ -80,6 +80,15 @@
       .change-table { min-width: 860px; }
       .chart-controls { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
       .chart-panel { min-height: 420px; }
+      .source-toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) repeat(4, auto); gap: 10px; align-items: end; margin-bottom: 12px; }
+      .source-toolbar button, .source-row-action { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: #f8fafc; color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+      .source-toolbar button.primary { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+      .source-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; color: var(--muted); font-size: 13px; }
+      .source-table { min-width: 2100px; }
+      .source-table input, .source-table select { min-width: 120px; padding: 7px 8px; font-size: 12px; }
+      .source-table .source-url { min-width: 260px; }
+      .source-table .source-model { min-width: 220px; }
+      .source-table .source-enabled { width: auto; min-width: 0; }
       canvas { max-height: 320px; }
       a { color: var(--accent); text-decoration: none; }
       @media (max-width: 980px) {
@@ -113,11 +122,48 @@
 
       <section class="view-tabs" aria-label="看板页面切换">
         <button class="tab-button active" type="button" data-view="detailsView" aria-selected="true">商品明细</button>
+        <button class="tab-button" type="button" data-view="sourceDataView" aria-selected="false">原始数据登记表</button>
         <button class="tab-button" type="button" data-view="focusView" aria-selected="false">重点关注</button>
         <button class="tab-button" type="button" data-view="competitorView" aria-selected="false">竞品跟踪</button>
         <button class="tab-button" type="button" data-view="shellOpportunityView" aria-selected="false">清水壳机会跟踪</button>
         <button class="tab-button" type="button" data-view="chartView" aria-selected="false">价格趋势</button>
         <button class="tab-button" type="button" data-view="changesView" aria-selected="false">本周价格异动统计</button>
+      </section>
+
+      <section class="view-panel" id="sourceDataView">
+        <h2>原始数据登记表</h2>
+        <div class="source-toolbar">
+          <label>查找原始数据<input id="sourceSearch" type="search" placeholder="ASIN / 型号 / 款式 / SKU / 状态" /></label>
+          <button id="addSourceRow" class="primary" type="button">新增 ASIN 行</button>
+          <button id="saveSourceDraft" type="button">保存到浏览器</button>
+          <button id="downloadSourceJson" type="button">下载 product_list.json</button>
+          <button id="resetSourceDraft" type="button">还原原始数据</button>
+        </div>
+        <div class="source-meta" id="sourceDataStatus"></div>
+        <div class="table-wrap">
+          <table class="source-table">
+            <thead>
+              <tr>
+                <th>ASIN</th>
+                <th>URL</th>
+                <th>品牌</th>
+                <th>类型</th>
+                <th>款式</th>
+                <th>型号</th>
+                <th>规格</th>
+                <th>手机品牌</th>
+                <th>SKU</th>
+                <th>iSKU</th>
+                <th>FNSKU</th>
+                <th>源表行</th>
+                <th>产品状态</th>
+                <th>启用爬取</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="sourceDataRows"></tbody>
+          </table>
+        </div>
       </section>
 
       <section class="view-panel active" id="detailsView">
@@ -257,11 +303,18 @@
       const NOTES_KEY = "amazon_fr_price_monitor_notes_v1";
       const FOCUS_KEY = "amazon_fr_price_monitor_focus_v1";
       const SHELL_OPPORTUNITY_KEY = "amazon_fr_price_monitor_shell_opportunity_v1";
+      const SOURCE_PRODUCTS_DRAFT_KEY = "amazon_fr_price_monitor_source_products_draft_v1";
+      const PRODUCT_LIST_RAW_URL = "https://raw.githubusercontent.com/646339360lin-coder/fr-price-monitor/main/product_list.json";
       const SHELL_TYPES = ["清水壳-单壳", "清水壳-3in1"];
+      const SOURCE_FIELDS = ["asin", "url", "brand", "category", "style", "model", "spec", "phone_brand", "sku", "isku", "fnsku", "source_row", "product_status"];
       const state = {
         latest: [],
         history: [],
         competitors: [],
+        sourceProducts: [],
+        originalSourceProducts: [],
+        sourceMeta: {},
+        sourceDraftDirty: false,
         chart: null,
         notes: loadNotes(),
         focused: loadFocus(),
@@ -364,6 +417,115 @@
         } catch {
           return fallback;
         }
+      }
+
+      async function loadSourceProductList() {
+        const local = await loadOptionalJson("product_list.json", null);
+        const source = local || await loadOptionalJson(PRODUCT_LIST_RAW_URL, { products: [] });
+        const products = Array.isArray(source.products) ? source.products : [];
+        const draft = loadSourceDraft();
+        state.sourceMeta = { ...source, products: undefined };
+        delete state.sourceMeta.products;
+        state.originalSourceProducts = cloneProducts(products);
+        state.sourceProducts = draft || cloneProducts(products);
+        state.sourceDraftDirty = Boolean(draft);
+      }
+
+      function cloneProducts(products) {
+        return products.map((item) => ({ ...item }));
+      }
+
+      function loadSourceDraft() {
+        try {
+          const draft = JSON.parse(localStorage.getItem(SOURCE_PRODUCTS_DRAFT_KEY) || "null");
+          return Array.isArray(draft?.products) ? draft.products : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function saveSourceDraft() {
+        localStorage.setItem(SOURCE_PRODUCTS_DRAFT_KEY, JSON.stringify({
+          saved_at: new Date().toISOString(),
+          products: normalizeSourceProducts(),
+        }));
+        state.sourceDraftDirty = true;
+        renderSourceData();
+      }
+
+      function clearSourceDraft() {
+        localStorage.removeItem(SOURCE_PRODUCTS_DRAFT_KEY);
+        state.sourceProducts = cloneProducts(state.originalSourceProducts);
+        state.sourceDraftDirty = false;
+        renderSourceData();
+      }
+
+      function productListPayload() {
+        return {
+          ...state.sourceMeta,
+          products: normalizeSourceProducts(),
+        };
+      }
+
+      function normalizeSourceProducts() {
+        return state.sourceProducts.map((item) => {
+          const asin = String(item.asin || item.id || "").trim().toUpperCase();
+          const row = { ...item };
+          SOURCE_FIELDS.forEach((field) => {
+            if (field === "asin") {
+              row.asin = asin;
+            } else {
+              row[field] = String(row[field] || "").trim();
+            }
+          });
+          row.id = asin;
+          if (!row.url && asin) row.url = amazonUrlForAsin(asin);
+          row.type = row.category || row.type || "";
+          row.name = row.name || [row.category, row.style, row.model, row.spec].filter(Boolean).join(" ");
+          row.enabled = Boolean(row.enabled);
+          return row;
+        });
+      }
+
+      function amazonUrlForAsin(asin) {
+        return asin ? `https://www.amazon.fr/dp/${encodeURIComponent(asin)}` : "";
+      }
+
+      function sourceSearchText(item) {
+        return [
+          item.asin,
+          item.url,
+          item.brand,
+          item.category,
+          item.style,
+          item.model,
+          item.spec,
+          item.phone_brand,
+          item.sku,
+          item.isku,
+          item.fnsku,
+          item.source_row,
+          item.product_status,
+        ].filter(Boolean).join(" ").toLowerCase();
+      }
+
+      function filteredSourceProducts() {
+        const search = document.querySelector("#sourceSearch")?.value.trim().toLowerCase() || "";
+        return state.sourceProducts
+          .map((item, index) => ({ item, index }))
+          .filter(({ item }) => !search || sourceSearchText(item).includes(search));
+      }
+
+      function sourceValidation() {
+        const asins = state.sourceProducts.map((item) => String(item.asin || item.id || "").trim().toUpperCase());
+        const missing = asins.filter((asin) => !asin).length;
+        const seen = new Set();
+        const duplicates = new Set();
+        asins.filter(Boolean).forEach((asin) => {
+          if (seen.has(asin)) duplicates.add(asin);
+          seen.add(asin);
+        });
+        return { missing, duplicates: [...duplicates] };
       }
 
       function keyOf(item) {
@@ -588,6 +750,132 @@
         renderChart();
       }
 
+      function renderSourceData() {
+        const rows = filteredSourceProducts();
+        const validation = sourceValidation();
+        const status = document.querySelector("#sourceDataStatus");
+        const duplicateText = validation.duplicates.length ? `重复 ASIN：${validation.duplicates.slice(0, 8).join(", ")}${validation.duplicates.length > 8 ? "..." : ""}` : "无重复 ASIN";
+        status.innerHTML = [
+          `<span>原始行数：${state.sourceProducts.length}</span>`,
+          `<span>当前显示：${rows.length}</span>`,
+          `<span>${state.sourceDraftDirty ? "有浏览器草稿" : "未保存浏览器草稿"}</span>`,
+          `<span>${validation.missing ? `缺少 ASIN：${validation.missing} 行` : "ASIN 完整"}</span>`,
+          `<span>${escapeHtml(duplicateText)}</span>`,
+        ].join("");
+        document.querySelector("#sourceDataRows").innerHTML = rows.length ? rows.map(({ item, index }) => renderSourceRow(item, index)).join("") : `<tr><td class="muted" colspan="15">暂无匹配原始数据</td></tr>`;
+      }
+
+      function renderSourceRow(item, index) {
+        return `<tr>
+          ${sourceInputCell(index, "asin", item.asin || item.id || "", "ASIN")}
+          ${sourceInputCell(index, "url", item.url || amazonUrlForAsin(item.asin || item.id || ""), "URL", "source-url")}
+          ${sourceInputCell(index, "brand", item.brand || "Tentoki", "品牌")}
+          ${sourceInputCell(index, "category", item.category || item.type || "", "类型")}
+          ${sourceInputCell(index, "style", item.style || "", "款式")}
+          ${sourceInputCell(index, "model", item.model || "", "型号", "source-model")}
+          ${sourceInputCell(index, "spec", item.spec || "", "规格")}
+          ${sourceInputCell(index, "phone_brand", item.phone_brand || "", "手机品牌")}
+          ${sourceInputCell(index, "sku", item.sku || "", "SKU")}
+          ${sourceInputCell(index, "isku", item.isku || "", "iSKU")}
+          ${sourceInputCell(index, "fnsku", item.fnsku || "", "FNSKU")}
+          ${sourceInputCell(index, "source_row", item.source_row || "", "源表行")}
+          <td>
+            <select class="source-field" data-index="${index}" data-field="product_status" aria-label="产品状态">
+              ${["正常在售", "新品", "停售", "待上架", "下架"].map((status) => `<option value="${escapeHtml(status)}" ${String(item.product_status || "") === status ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}
+              <option value="${escapeHtml(item.product_status || "")}" ${["正常在售", "新品", "停售", "待上架", "下架"].includes(item.product_status || "") ? "" : "selected"}>${escapeHtml(item.product_status || "自定义")}</option>
+            </select>
+          </td>
+          <td><input class="source-field source-enabled" data-index="${index}" data-field="enabled" type="checkbox" ${item.enabled !== false ? "checked" : ""} aria-label="启用爬取"></td>
+          <td><button class="source-row-action source-remove" type="button" data-index="${index}">移除本地行</button></td>
+        </tr>`;
+      }
+
+      function sourceInputCell(index, field, value, label, extraClass = "") {
+        return `<td><input class="source-field ${extraClass}" data-index="${index}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"></td>`;
+      }
+
+      function updateSourceField(input) {
+        const index = Number(input.dataset.index);
+        const field = input.dataset.field;
+        const row = state.sourceProducts[index];
+        if (!row || !field) return;
+        if (field === "enabled") {
+          row.enabled = input.checked;
+        } else {
+          row[field] = input.value;
+          if (field === "asin") {
+            row.asin = input.value.trim().toUpperCase();
+            row.id = row.asin;
+            if (!row.url || row.url.includes("amazon.fr/dp/")) {
+              row.url = amazonUrlForAsin(row.asin);
+              const urlInput = document.querySelector(`.source-field[data-index="${index}"][data-field="url"]`);
+              if (urlInput) urlInput.value = row.url;
+            }
+          }
+          if (field === "category") row.type = input.value;
+        }
+        state.sourceDraftDirty = true;
+        renderSourceDataStatusOnly();
+      }
+
+      function renderSourceDataStatusOnly() {
+        const validation = sourceValidation();
+        const status = document.querySelector("#sourceDataStatus");
+        if (!status) return;
+        const duplicateText = validation.duplicates.length ? `重复 ASIN：${validation.duplicates.slice(0, 8).join(", ")}${validation.duplicates.length > 8 ? "..." : ""}` : "无重复 ASIN";
+        status.innerHTML = [
+          `<span>原始行数：${state.sourceProducts.length}</span>`,
+          `<span>当前显示：${filteredSourceProducts().length}</span>`,
+          `<span>有未保存改动</span>`,
+          `<span>${validation.missing ? `缺少 ASIN：${validation.missing} 行` : "ASIN 完整"}</span>`,
+          `<span>${escapeHtml(duplicateText)}</span>`,
+        ].join("");
+      }
+
+      function addSourceRow() {
+        state.sourceProducts.unshift({
+          id: "",
+          asin: "",
+          url: "",
+          brand: "Tentoki",
+          category: "",
+          type: "",
+          style: "",
+          model: "",
+          spec: "",
+          phone_brand: "",
+          sku: "",
+          isku: "",
+          fnsku: "",
+          source_row: "",
+          product_status: "新品",
+          enabled: true,
+        });
+        state.sourceDraftDirty = true;
+        document.querySelector("#sourceSearch").value = "";
+        renderSourceData();
+      }
+
+      function removeSourceRow(index) {
+        if (!window.confirm("只会移除当前浏览器草稿里的这一行，下载 JSON 前不会影响仓库。确认移除？")) return;
+        state.sourceProducts.splice(index, 1);
+        state.sourceDraftDirty = true;
+        renderSourceData();
+      }
+
+      function downloadSourceJson() {
+        const payload = JSON.stringify(productListPayload(), null, 2) + "\n";
+        const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "product_list.json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
       function renderChart() {
         if (!window.Chart) {
           showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
@@ -725,6 +1013,7 @@
         renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
         renderTable(competitorRows, "#competitorRows", { showFocus: false, showImage: true, showMemo: false, emptyMessage: "还没有竞品数据。后续导入竞品 ASIN 后会显示在这里。" });
         renderShellOpportunity();
+        renderSourceData();
         renderProductAsinOptions(rows);
         renderWeeklyChanges();
       }
@@ -737,6 +1026,7 @@
           button.setAttribute("aria-selected", String(active));
         });
         if (viewId === "chartView") renderChart();
+        if (viewId === "sourceDataView") renderSourceData();
       }
 
       function escapeHtml(value) {
@@ -747,6 +1037,7 @@
         const latest = await loadJson("price_results_latest.json", { products: [] });
         const history = await loadJson("price_history.json", { products: [] });
         const competitors = await loadOptionalJson("competitor_results_latest.json", { products: [] });
+        await loadSourceProductList();
         state.latest = latest.products || [];
         state.history = history.products || state.latest;
         state.competitors = competitors.products || [];
@@ -764,6 +1055,11 @@
           .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
         ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
+        document.querySelector("#sourceSearch").addEventListener("input", renderSourceData);
+        document.querySelector("#addSourceRow").addEventListener("click", addSourceRow);
+        document.querySelector("#saveSourceDraft").addEventListener("click", saveSourceDraft);
+        document.querySelector("#downloadSourceJson").addEventListener("click", downloadSourceJson);
+        document.querySelector("#resetSourceDraft").addEventListener("click", clearSourceDraft);
         document.querySelectorAll(".tab-button").forEach((button) => {
           button.addEventListener("click", () => switchView(button.dataset.view));
         });
@@ -792,6 +1088,18 @@
         document.addEventListener("click", (event) => {
           if (!event.target.classList.contains("memo-save")) return;
           saveMemoForButton(event.target);
+        });
+        document.addEventListener("input", (event) => {
+          if (!event.target.classList.contains("source-field")) return;
+          updateSourceField(event.target);
+        });
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("source-field")) return;
+          updateSourceField(event.target);
+        });
+        document.addEventListener("click", (event) => {
+          if (!event.target.classList.contains("source-remove")) return;
+          removeSourceRow(Number(event.target.dataset.index));
         });
         document.querySelectorAll(".product-asin-input").forEach((input) => {
           input.addEventListener("input", renderChart);
