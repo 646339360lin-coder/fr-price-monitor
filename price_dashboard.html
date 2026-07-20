@@ -89,6 +89,9 @@
       .source-table .source-url { min-width: 260px; }
       .source-table .source-model { min-width: 220px; }
       .source-table .source-enabled { width: auto; min-width: 0; }
+      .panel-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+      .panel-toolbar button { border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; background: #eff6ff; color: var(--accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+      .panel-toolbar .toolbar-note { color: var(--muted); font-size: 13px; }
       canvas { max-height: 320px; }
       a { color: var(--accent); text-decoration: none; }
       @media (max-width: 980px) {
@@ -196,6 +199,10 @@
 
       <section class="view-panel" id="focusView">
         <h2>重点关注</h2>
+        <div class="panel-toolbar">
+          <button id="exportFocusExcel" type="button">导出全部重点关注 Excel</button>
+          <span class="toolbar-note" id="focusExportStatus">用于导入外部操作系统的字段化表格</span>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -878,6 +885,100 @@
         URL.revokeObjectURL(url);
       }
 
+      function focusExportRows() {
+        return state.latest
+          .filter((item) => state.focused.has(asinOf(item)))
+          .sort((a, b) => asinOf(a).localeCompare(asinOf(b)));
+      }
+
+      function renderFocusExportStatus() {
+        const node = document.querySelector("#focusExportStatus");
+        if (!node) return;
+        node.textContent = `当前已标记重点关注：${focusExportRows().length} 个 ASIN`;
+      }
+
+      function downloadFocusExcel() {
+        const rows = focusExportRows();
+        if (!rows.length) {
+          window.alert("当前没有重点关注商品。请先在商品明细里勾选“关注”。");
+          renderFocusExportStatus();
+          return;
+        }
+        const html = focusExcelHtml(rows);
+        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `重点关注_${todayStamp()}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        const node = document.querySelector("#focusExportStatus");
+        if (node) node.textContent = `已导出：${rows.length} 个 ASIN`;
+      }
+
+      function focusExcelHtml(rows) {
+        const headers = [
+          "ASIN",
+          "Amazon URL",
+          "品牌",
+          "类型",
+          "款式",
+          "型号",
+          "规格",
+          "手机品牌",
+          "当前售价 EUR",
+          "MSRP EUR",
+          "折扣比例",
+          "促销状态",
+          "抓取状态",
+          "备忘",
+          "备忘日期",
+          "抓取时间",
+        ];
+        const bodyRows = rows.map((item) => {
+          const asin = asinOf(item);
+          const note = state.notes[asin] || {};
+          return [
+            asin,
+            item.product_url || "",
+            item.brand || "",
+            item.category || "",
+            item.style || "",
+            item.model || "",
+            item.spec || "",
+            item.phone_brand || "",
+            price(item.current_price) ?? "",
+            price(item.msrp_price) ?? "",
+            item.discount_percent || "",
+            item.promotion_status || "",
+            item.status || "",
+            note.text || "",
+            note.updated_at || "",
+            item.scraped_at || "",
+          ];
+        });
+        return `<!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                table { border-collapse: collapse; }
+                th, td { border: 1px solid #999; padding: 6px; white-space: nowrap; }
+                th { background: #eef2ff; font-weight: 700; }
+                .text { mso-number-format:"\\@"; }
+              </style>
+            </head>
+            <body>
+              <table>
+                <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+                <tbody>${bodyRows.map((row) => `<tr>${row.map((cell, index) => `<td${index <= 7 || index >= 11 ? ' class="text"' : ""}>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+              </table>
+            </body>
+          </html>`;
+      }
+
       function renderChart() {
         if (!window.Chart) {
           showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
@@ -1013,6 +1114,7 @@
         renderMetrics(rows);
         renderTable(rows);
         renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
+        renderFocusExportStatus();
         renderTable(competitorRows, "#competitorRows", { showFocus: false, showImage: true, showMemo: false, emptyMessage: "还没有竞品数据。后续导入竞品 ASIN 后会显示在这里。" });
         renderShellOpportunity();
         renderSourceData();
@@ -1062,6 +1164,7 @@
         document.querySelector("#saveSourceDraft").addEventListener("click", saveSourceDraft);
         document.querySelector("#downloadSourceJson").addEventListener("click", downloadSourceJson);
         document.querySelector("#resetSourceDraft").addEventListener("click", clearSourceDraft);
+        document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
         document.querySelectorAll(".tab-button").forEach((button) => {
           button.addEventListener("click", () => switchView(button.dataset.view));
         });
