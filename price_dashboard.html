@@ -34,7 +34,11 @@
       label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
       select, input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit; background: white; color: var(--text); }
       .metrics { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 12px; }
-      .metric { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #fbfcfe; }
+      .metric { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #fbfcfe; text-align: left; color: var(--text); font: inherit; }
+      .metric-filter { cursor: pointer; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+      .metric-filter:hover { border-color: #93c5fd; background: #f3f8ff; }
+      .metric-filter.active { border-color: var(--accent); background: #eff6ff; box-shadow: inset 0 0 0 1px var(--accent); }
+      .metric-filter.active span, .metric-filter.active strong { color: var(--accent); }
       .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
       .metric strong { font-size: 24px; }
       .view-tabs { display: flex; flex-wrap: wrap; gap: 10px; background: transparent; border: 0; padding: 0; }
@@ -387,6 +391,7 @@
         notes: loadNotes(),
         focused: loadFocus(),
         shellOpportunity: loadShellOpportunity(),
+        metricFilter: null,
         columnFilters: { details: {}, focus: {}, competitor: {} },
         tableFilterSources: { details: [], focus: [], competitor: [] },
         activeColumnFilter: null,
@@ -913,13 +918,26 @@
         const stale = rows.filter((item) => item.status === "stale_price").length;
         const promos = rows.filter((item) => item.promotion_status).length;
         const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+        const filters = [
+          { key: "all", label: "监控商品", value: rows.length },
+          { key: "fresh", label: "本次成功取价", value: fresh },
+          { key: "stale", label: "沿用历史价", value: stale },
+        ];
         document.querySelector("#metrics").innerHTML = [
-          ["监控商品", rows.length],
-          ["本次成功取价", fresh],
-          ["沿用历史价", stale],
-          ["平均售价", avg === null ? "-" : fmt.format(avg)],
-          ["有促销", promos],
-        ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join("");
+          ...filters.map(({ key, label, value }) => `<button class="metric metric-filter ${state.metricFilter === key ? "active" : ""}" type="button" data-metric-filter="${key}" aria-pressed="${state.metricFilter === key}" title="点击筛选${label}"><span>${label}</span><strong>${value}</strong></button>`),
+          `<div class="metric"><span>平均售价</span><strong>${avg === null ? "-" : fmt.format(avg)}</strong></div>`,
+          `<div class="metric"><span>有促销</span><strong>${promos}</strong></div>`,
+        ].join("");
+      }
+
+      function applyMetricFilter(rows) {
+        if (state.metricFilter === "fresh") {
+          return rows.filter((item) => item.status === "ok" || item.status === "ok_manual");
+        }
+        if (state.metricFilter === "stale") {
+          return rows.filter((item) => item.status === "stale_price");
+        }
+        return rows;
       }
 
       function statusBadgeClass(status) {
@@ -1389,10 +1407,11 @@
           focus: focusBaseRows,
           competitor: competitorBaseRows,
         };
-        const rows = applyColumnFilters(detailsBaseRows, "details");
+        const detailsColumnRows = applyColumnFilters(detailsBaseRows, "details");
+        const rows = applyMetricFilter(detailsColumnRows);
         const focusRows = applyColumnFilters(focusBaseRows, "focus");
         const competitorRows = applyColumnFilters(competitorBaseRows, "competitor");
-        renderMetrics(rows);
+        renderMetrics(detailsColumnRows);
         renderTable(rows);
         renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
         renderFocusExportStatus();
@@ -1489,6 +1508,14 @@
           renderShellOpportunity();
         });
         document.addEventListener("click", (event) => {
+          const metricButton = event.target.closest?.(".metric-filter");
+          if (metricButton) {
+            const filter = metricButton.dataset.metricFilter;
+            state.metricFilter = state.metricFilter === filter ? null : filter;
+            switchView("detailsView");
+            render();
+            return;
+          }
           const filterButton = event.target.closest?.(".column-filter-button");
           if (filterButton) {
             openColumnFilter(filterButton);
