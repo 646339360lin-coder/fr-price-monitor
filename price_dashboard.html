@@ -43,9 +43,24 @@
       .view-panel { display: none; }
       .view-panel.active { display: block; }
       .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-      table { width: 100%; border-collapse: collapse; min-width: 1860px; }
+      table { width: 100%; border-collapse: collapse; min-width: 2240px; }
       th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
       th { background: #f1f4f8; color: #344055; position: sticky; top: 0; z-index: 1; }
+      .column-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: max-content; }
+      .column-filter-button { width: 24px; height: 24px; flex: 0 0 24px; border: 1px solid transparent; border-radius: 5px; padding: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+      .column-filter-button:hover, .column-filter-button.active { border-color: #93c5fd; background: #dbeafe; color: #1d4ed8; }
+      .column-filter-popover { position: fixed; z-index: 30; width: min(320px, calc(100vw - 24px)); max-height: min(520px, calc(100vh - 24px)); overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 16px 40px rgba(15, 23, 42, .18); padding: 12px; }
+      .column-filter-popover[hidden] { display: none; }
+      .column-filter-title { margin: 0 0 10px; font-size: 14px; font-weight: 800; }
+      .column-filter-search { margin-bottom: 8px; }
+      .column-filter-options { display: grid; gap: 2px; max-height: 280px; overflow: auto; padding: 4px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .column-filter-option { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 8px; padding: 6px 4px; color: var(--text); font-weight: 500; cursor: pointer; }
+      .column-filter-option input { width: auto; margin: 2px 0 0; }
+      .column-filter-option span { overflow-wrap: anywhere; }
+      .column-filter-count { margin: 8px 0; color: var(--muted); font-size: 12px; }
+      .column-filter-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .column-filter-actions button { border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; background: #f8fafc; color: var(--text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+      .column-filter-actions button.primary { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
       tr:hover td { background: #f9fbff; }
       .asin-link { font-weight: 700; white-space: nowrap; }
       .focus-cell { min-width: 92px; }
@@ -85,6 +100,7 @@
       .source-toolbar button.primary { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
       .source-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; color: var(--muted); font-size: 13px; }
       .source-table { min-width: 2100px; }
+      .non-active-table { min-width: 1680px; }
       .source-table input, .source-table select { min-width: 120px; padding: 7px 8px; font-size: 12px; }
       .source-table .source-url { min-width: 260px; }
       .source-table .source-model { min-width: 220px; }
@@ -126,11 +142,31 @@
       <section class="view-tabs" aria-label="看板页面切换">
         <button class="tab-button active" type="button" data-view="detailsView" aria-selected="true">商品明细</button>
         <button class="tab-button" type="button" data-view="sourceDataView" aria-selected="false">原始数据登记表</button>
+        <button class="tab-button" type="button" data-view="nonActiveView" aria-selected="false">非在售产品</button>
         <button class="tab-button" type="button" data-view="focusView" aria-selected="false">重点关注</button>
         <button class="tab-button" type="button" data-view="competitorView" aria-selected="false">竞品跟踪</button>
         <button class="tab-button" type="button" data-view="shellOpportunityView" aria-selected="false">清水壳机会跟踪</button>
         <button class="tab-button" type="button" data-view="chartView" aria-selected="false">价格趋势</button>
         <button class="tab-button" type="button" data-view="changesView" aria-selected="false">本周价格异动统计</button>
+      </section>
+
+      <section class="view-panel" id="nonActiveView">
+        <h2>非在售产品</h2>
+        <div class="source-toolbar">
+          <label>查找非在售产品<input id="nonActiveSearch" type="search" placeholder="SKU / ASIN / 型号 / 款式 / 状态" /></label>
+        </div>
+        <div class="source-meta" id="nonActiveStatus"></div>
+        <div class="table-wrap">
+          <table class="non-active-table">
+            <thead>
+              <tr>
+                <th>SKU</th><th>ASIN</th><th>产品状态</th><th>类型</th><th>款式</th><th>型号</th>
+                <th>规格</th><th>手机品牌</th><th>iSKU</th><th>FNSKU</th><th>源表行</th><th>备忘</th>
+              </tr>
+            </thead>
+            <tbody id="nonActiveRows"></tbody>
+          </table>
+        </div>
       </section>
 
       <section class="view-panel" id="sourceDataView">
@@ -172,24 +208,27 @@
       <section class="view-panel active" id="detailsView">
         <h2>商品明细</h2>
         <div class="table-wrap">
-          <table>
+          <table data-filter-table="details">
             <thead>
               <tr>
-                <th>ASIN</th>
-                <th>重点关注</th>
-                <th>品牌</th>
-                <th>类型</th>
-                <th>款式</th>
-                <th>型号</th>
-                <th>规格</th>
-                <th>手机品牌</th>
-                <th>当前价</th>
-                <th>MSRP</th>
-                <th>折扣</th>
-                <th>促销</th>
-                <th>状态</th>
-                <th>备忘</th>
-                <th>抓取时间</th>
+                <th data-filter-key="asin">ASIN</th>
+                <th data-filter-key="focus">重点关注</th>
+                <th data-filter-key="brand">品牌</th>
+                <th data-filter-key="category">类型</th>
+                <th data-filter-key="style">款式</th>
+                <th data-filter-key="model">型号</th>
+                <th data-filter-key="spec">规格</th>
+                <th data-filter-key="phone_brand">手机品牌</th>
+                <th data-filter-key="rating">评分</th>
+                <th data-filter-key="review_count">评论数</th>
+                <th data-filter-key="monthly_sales_label">近30天销量标签</th>
+                <th data-filter-key="current_price">当前价</th>
+                <th data-filter-key="msrp_price">MSRP</th>
+                <th data-filter-key="discount_percent">折扣</th>
+                <th data-filter-key="promotion_status">促销</th>
+                <th data-filter-key="status">状态</th>
+                <th data-filter-key="memo">备忘</th>
+                <th data-filter-key="scraped_at">抓取时间</th>
               </tr>
             </thead>
             <tbody id="productRows"></tbody>
@@ -204,24 +243,27 @@
           <span class="toolbar-note" id="focusExportStatus">用于导入外部操作系统的字段化表格</span>
         </div>
         <div class="table-wrap">
-          <table>
+          <table data-filter-table="focus">
             <thead>
               <tr>
-                <th>ASIN</th>
-                <th>重点关注</th>
-                <th>品牌</th>
-                <th>类型</th>
-                <th>款式</th>
-                <th>型号</th>
-                <th>规格</th>
-                <th>手机品牌</th>
-                <th>当前价</th>
-                <th>MSRP</th>
-                <th>折扣</th>
-                <th>促销</th>
-                <th>状态</th>
-                <th>备忘</th>
-                <th>抓取时间</th>
+                <th data-filter-key="asin">ASIN</th>
+                <th data-filter-key="focus">重点关注</th>
+                <th data-filter-key="brand">品牌</th>
+                <th data-filter-key="category">类型</th>
+                <th data-filter-key="style">款式</th>
+                <th data-filter-key="model">型号</th>
+                <th data-filter-key="spec">规格</th>
+                <th data-filter-key="phone_brand">手机品牌</th>
+                <th data-filter-key="rating">评分</th>
+                <th data-filter-key="review_count">评论数</th>
+                <th data-filter-key="monthly_sales_label">近30天销量标签</th>
+                <th data-filter-key="current_price">当前价</th>
+                <th data-filter-key="msrp_price">MSRP</th>
+                <th data-filter-key="discount_percent">折扣</th>
+                <th data-filter-key="promotion_status">促销</th>
+                <th data-filter-key="status">状态</th>
+                <th data-filter-key="memo">备忘</th>
+                <th data-filter-key="scraped_at">抓取时间</th>
               </tr>
             </thead>
             <tbody id="focusRows"></tbody>
@@ -232,23 +274,26 @@
       <section class="view-panel" id="competitorView">
         <h2>竞品跟踪</h2>
         <div class="table-wrap">
-          <table>
+          <table data-filter-table="competitor">
             <thead>
               <tr>
-                <th>主图</th>
-                <th>ASIN</th>
-                <th>品牌</th>
-                <th>类型</th>
-                <th>款式</th>
-                <th>型号</th>
-                <th>规格</th>
-                <th>手机品牌</th>
-                <th>当前价</th>
-                <th>MSRP</th>
-                <th>折扣</th>
-                <th>促销</th>
-                <th>状态</th>
-                <th>抓取时间</th>
+                <th data-filter-key="image">主图</th>
+                <th data-filter-key="asin">ASIN</th>
+                <th data-filter-key="brand">品牌</th>
+                <th data-filter-key="category">类型</th>
+                <th data-filter-key="style">款式</th>
+                <th data-filter-key="model">型号</th>
+                <th data-filter-key="spec">规格</th>
+                <th data-filter-key="phone_brand">手机品牌</th>
+                <th data-filter-key="rating">评分</th>
+                <th data-filter-key="review_count">评论数</th>
+                <th data-filter-key="monthly_sales_label">近30天销量标签</th>
+                <th data-filter-key="current_price">当前价</th>
+                <th data-filter-key="msrp_price">MSRP</th>
+                <th data-filter-key="discount_percent">折扣</th>
+                <th data-filter-key="promotion_status">促销</th>
+                <th data-filter-key="status">状态</th>
+                <th data-filter-key="scraped_at">抓取时间</th>
               </tr>
             </thead>
             <tbody id="competitorRows"></tbody>
@@ -306,28 +351,48 @@
       </section>
     </main>
 
+    <div class="column-filter-popover" id="columnFilterPopover" hidden>
+      <p class="column-filter-title" id="columnFilterTitle"></p>
+      <input class="column-filter-search" id="columnFilterSearch" type="search" placeholder="查找筛选项" />
+      <div class="column-filter-options" id="columnFilterOptions"></div>
+      <div class="column-filter-count" id="columnFilterCount"></div>
+      <div class="column-filter-actions">
+        <button id="columnFilterSelectAll" type="button">全选</button>
+        <button id="columnFilterClear" type="button">清空</button>
+        <button id="columnFilterApply" class="primary" type="button">应用</button>
+      </div>
+    </div>
+
     <script>
       const NOTES_KEY = "amazon_fr_price_monitor_notes_v1";
       const FOCUS_KEY = "amazon_fr_price_monitor_focus_v1";
       const SHELL_OPPORTUNITY_KEY = "amazon_fr_price_monitor_shell_opportunity_v1";
       const SOURCE_PRODUCTS_DRAFT_KEY = "amazon_fr_price_monitor_source_products_draft_v1";
+      const NON_ACTIVE_NOTES_KEY = "amazon_fr_price_monitor_non_active_notes_v1";
       const PRODUCT_LIST_RAW_URL = "https://raw.githubusercontent.com/646339360lin-coder/fr-price-monitor/main/product_list.json";
       const SHELL_TYPES = ["清水壳-单壳", "清水壳-3in1"];
       const SOURCE_FIELDS = ["asin", "url", "brand", "category", "style", "model", "spec", "phone_brand", "sku", "isku", "fnsku", "source_row", "product_status"];
+      const EMPTY_FILTER_VALUE = "（空白）";
       const state = {
         latest: [],
         history: [],
         competitors: [],
         sourceProducts: [],
         originalSourceProducts: [],
+        nonActiveProducts: [],
+        nonActiveNotes: loadNonActiveNotes(),
         sourceMeta: {},
         sourceDraftDirty: false,
         chart: null,
         notes: loadNotes(),
         focused: loadFocus(),
         shellOpportunity: loadShellOpportunity(),
+        columnFilters: { details: {}, focus: {}, competitor: {} },
+        tableFilterSources: { details: [], focus: [], competitor: [] },
+        activeColumnFilter: null,
       };
       const fmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+      const numberFmt = new Intl.NumberFormat("fr-FR");
 
       function withCacheBust(url) {
         const separator = url.includes("?") ? "&" : "?";
@@ -357,6 +422,38 @@
 
       function saveNotes() {
         localStorage.setItem(NOTES_KEY, JSON.stringify(state.notes));
+      }
+
+      function loadNonActiveNotes() {
+        try {
+          return JSON.parse(localStorage.getItem(NON_ACTIVE_NOTES_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function nonActiveKey(item) {
+        return String(item.sku || item.isku || item.fnsku || item.asin || `row-${item.source_row || ""}`).trim();
+      }
+
+      function saveNonActiveMemo(button) {
+        const key = button.dataset.key;
+        if (!key) return;
+        const cell = button.closest(".memo-cell");
+        const input = cell?.querySelector(".non-active-memo-input");
+        const dateNode = cell?.querySelector(".memo-date");
+        const text = input?.value || "";
+        const date = todayStamp();
+        if (text.trim()) {
+          state.nonActiveNotes[key] = { text, updated_at: date };
+          if (dateNode) dateNode.textContent = `更新：${date}`;
+        } else {
+          delete state.nonActiveNotes[key];
+          if (dateNode) dateNode.textContent = "";
+        }
+        localStorage.setItem(NON_ACTIVE_NOTES_KEY, JSON.stringify(state.nonActiveNotes));
+        button.textContent = "已保存";
+        setTimeout(() => { button.textContent = "保存"; }, 1200);
       }
 
       function saveMemoForButton(button) {
@@ -432,9 +529,11 @@
           ? await loadOptionalJson(PRODUCT_LIST_RAW_URL, { products: [] })
           : await loadOptionalJson("product_list.json", { products: [] });
         const products = Array.isArray(source.products) ? source.products : [];
+        state.nonActiveProducts = Array.isArray(source.non_active_products) ? cloneProducts(source.non_active_products) : [];
         const draft = loadSourceDraft();
         state.sourceMeta = { ...source, products: undefined };
         delete state.sourceMeta.products;
+        delete state.sourceMeta.non_active_products;
         state.originalSourceProducts = cloneProducts(products);
         state.sourceProducts = draft || cloneProducts(products);
         state.sourceDraftDirty = Boolean(draft);
@@ -473,7 +572,34 @@
         return {
           ...state.sourceMeta,
           products: normalizeSourceProducts(),
+          non_active_products: state.nonActiveProducts,
         };
+      }
+
+      function renderNonActiveProducts() {
+        const search = document.querySelector("#nonActiveSearch")?.value.trim().toLowerCase() || "";
+        const rows = state.nonActiveProducts.filter((item) => !search || sourceSearchText(item).includes(search));
+        document.querySelector("#nonActiveStatus").innerHTML = `<span>非在售 SKU：${rows.length} / ${state.nonActiveProducts.length}</span><span>这些记录不会执行 Amazon 抓价</span>`;
+        document.querySelector("#nonActiveRows").innerHTML = rows.length ? rows.map((item) => {
+          const key = nonActiveKey(item);
+          const note = state.nonActiveNotes[key] || {};
+          const asin = String(item.asin || "");
+          const asinCell = asin && item.url
+            ? `<a class="asin-link" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a>`
+            : escapeHtml(asin || "-");
+          return `<tr>
+            <td>${escapeHtml(item.sku || "-")}</td><td>${asinCell}</td><td>${escapeHtml(item.product_status || "-")}</td>
+            <td>${escapeHtml(item.category || item.type || "-")}</td><td>${escapeHtml(item.style || "-")}</td>
+            <td>${escapeHtml(item.model || "-")}</td><td>${escapeHtml(item.spec || "-")}</td>
+            <td>${escapeHtml(item.phone_brand || "-")}</td><td>${escapeHtml(item.isku || "-")}</td>
+            <td>${escapeHtml(item.fnsku || "-")}</td><td>${escapeHtml(item.source_row || "-")}</td>
+            <td class="memo-cell">
+              <textarea class="memo-input non-active-memo-input" placeholder="输入备忘">${escapeHtml(note.text || "")}</textarea>
+              <div class="memo-actions"><button class="memo-save non-active-memo-save" type="button" data-key="${escapeHtml(key)}">保存</button></div>
+              <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
+            </td>
+          </tr>`;
+        }).join("") : `<tr><td class="muted" colspan="12">WPS 同步后，其他产品状态的 SKU 会显示在这里。</td></tr>`;
       }
 
       function normalizeSourceProducts() {
@@ -551,6 +677,140 @@
         return Number.isFinite(number) ? number : null;
       }
 
+      function ratingText(value) {
+        const rating = price(value);
+        return rating === null ? "-" : numberFmt.format(rating);
+      }
+
+      function reviewCountText(value) {
+        if (value === null || value === undefined || value === "") return "-";
+        const count = Number(value);
+        return Number.isFinite(count) ? numberFmt.format(count) : "-";
+      }
+
+      function columnFilterValue(item, key) {
+        const asin = asinOf(item);
+        const note = state.notes[asin] || {};
+        const current = price(item.current_price);
+        const msrp = price(item.msrp_price);
+        const discount = price(item.discount_percent);
+        const values = {
+          image: item.image_url ? "有主图" : "无主图",
+          asin,
+          focus: state.focused.has(asin) ? "已关注" : "未关注",
+          brand: item.brand,
+          category: item.category,
+          style: item.style,
+          model: item.model,
+          spec: item.spec,
+          phone_brand: item.phone_brand,
+          rating: price(item.rating) === null ? null : ratingText(item.rating),
+          review_count: item.review_count,
+          monthly_sales_label: item.monthly_sales_label,
+          current_price: current === null ? null : fmt.format(current),
+          msrp_price: msrp === null ? null : fmt.format(msrp),
+          discount_percent: discount > 0 ? `${numberFmt.format(discount)}%` : null,
+          promotion_status: item.promotion_status || "无促销",
+          status: item.status,
+          memo: note.text?.trim() ? "有备忘" : "无备忘",
+          scraped_at: item.scraped_at?.slice(0, 10),
+        };
+        const value = values[key];
+        return value === null || value === undefined || value === "" ? EMPTY_FILTER_VALUE : String(value);
+      }
+
+      function applyColumnFilters(rows, tableId) {
+        const filters = state.columnFilters[tableId] || {};
+        return rows.filter((item) => Object.entries(filters).every(([key, selected]) => selected.has(columnFilterValue(item, key))));
+      }
+
+      function initializeColumnFilters() {
+        document.querySelectorAll("table[data-filter-table]").forEach((table) => {
+          table.querySelectorAll("thead th[data-filter-key]").forEach((header) => {
+            if (header.querySelector(".column-filter-button")) return;
+            const label = header.textContent.trim();
+            header.dataset.filterLabel = label;
+            header.innerHTML = `<span class="column-header"><span>${escapeHtml(label)}</span><button class="column-filter-button" type="button" title="筛选 ${escapeHtml(label)}" aria-label="筛选 ${escapeHtml(label)}">▼</button></span>`;
+          });
+        });
+      }
+
+      function openColumnFilter(button) {
+        const table = button.closest("table[data-filter-table]");
+        const header = button.closest("th[data-filter-key]");
+        if (!table || !header) return;
+        const tableId = table.dataset.filterTable;
+        const key = header.dataset.filterKey;
+        const values = [...new Set((state.tableFilterSources[tableId] || []).map((item) => columnFilterValue(item, key)))]
+          .sort((a, b) => a.localeCompare(b, "zh-Hans-CN", { numeric: true }));
+        const current = state.columnFilters[tableId]?.[key];
+        state.activeColumnFilter = {
+          tableId,
+          key,
+          label: header.dataset.filterLabel || key,
+          values,
+          draft: new Set(current ? [...current] : values),
+        };
+        const popover = document.querySelector("#columnFilterPopover");
+        document.querySelector("#columnFilterTitle").textContent = `${state.activeColumnFilter.label}筛选`;
+        document.querySelector("#columnFilterSearch").value = "";
+        renderColumnFilterOptions();
+        popover.hidden = false;
+        popover.style.left = "12px";
+        popover.style.top = "12px";
+        const rect = button.getBoundingClientRect();
+        const left = Math.max(12, Math.min(rect.left, window.innerWidth - popover.offsetWidth - 12));
+        const top = Math.max(12, Math.min(rect.bottom + 6, window.innerHeight - popover.offsetHeight - 12));
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+        document.querySelector("#columnFilterSearch").focus();
+      }
+
+      function renderColumnFilterOptions() {
+        const active = state.activeColumnFilter;
+        if (!active) return;
+        const search = document.querySelector("#columnFilterSearch").value.trim().toLowerCase();
+        const visible = active.values.filter((value) => !search || value.toLowerCase().includes(search));
+        document.querySelector("#columnFilterOptions").innerHTML = visible.length
+          ? visible.map((value) => `<label class="column-filter-option"><input class="column-filter-checkbox" type="checkbox" data-value="${escapeHtml(value)}" ${active.draft.has(value) ? "checked" : ""}><span>${escapeHtml(value)}</span></label>`).join("")
+          : `<span class="muted">没有匹配项</span>`;
+        updateColumnFilterCount();
+      }
+
+      function updateColumnFilterCount() {
+        const active = state.activeColumnFilter;
+        if (!active) return;
+        document.querySelector("#columnFilterCount").textContent = `已选 ${active.draft.size} / ${active.values.length} 项`;
+      }
+
+      function applyActiveColumnFilter() {
+        const active = state.activeColumnFilter;
+        if (!active) return;
+        const filters = state.columnFilters[active.tableId];
+        if (active.draft.size === active.values.length) {
+          delete filters[active.key];
+        } else {
+          filters[active.key] = new Set(active.draft);
+        }
+        closeColumnFilter();
+        render();
+      }
+
+      function closeColumnFilter() {
+        document.querySelector("#columnFilterPopover").hidden = true;
+        state.activeColumnFilter = null;
+      }
+
+      function updateColumnFilterButtons() {
+        document.querySelectorAll("table[data-filter-table]").forEach((table) => {
+          const tableId = table.dataset.filterTable;
+          table.querySelectorAll("th[data-filter-key]").forEach((header) => {
+            const active = Object.prototype.hasOwnProperty.call(state.columnFilters[tableId] || {}, header.dataset.filterKey);
+            header.querySelector(".column-filter-button")?.classList.toggle("active", active);
+          });
+        });
+      }
+
       function filteredProducts(rows = state.latest) {
         const brand = document.querySelector("#brandFilter").value;
         const category = document.querySelector("#categoryFilter").value;
@@ -583,6 +843,9 @@
           item.model,
           item.spec,
           item.phone_brand,
+          item.rating,
+          item.review_count,
+          item.monthly_sales_label,
           item.status,
           item.promotion_status,
           note.text,
@@ -686,6 +949,9 @@
             <td>${escapeHtml(item.model || "-")}</td>
             <td>${escapeHtml(item.spec || "-")}</td>
             <td>${escapeHtml(item.phone_brand || "-")}</td>
+            <td>${escapeHtml(ratingText(item.rating))}</td>
+            <td>${escapeHtml(reviewCountText(item.review_count))}</td>
+            <td>${escapeHtml(item.monthly_sales_label || "-")}</td>
             <td class="price">${current === null ? "-" : fmt.format(current)}${item.price_carried_forward ? `<br><span class="muted">沿用上次有效价</span>` : ""}</td>
             <td>${msrp === null ? "-" : fmt.format(msrp)}</td>
             <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
@@ -701,7 +967,7 @@
             </td>` : ""}
             <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
           </tr>`;
-        }).join("") : `<tr><td class="muted" colspan="16">${escapeHtml(emptyMessage)}</td></tr>`;
+        }).join("") : `<tr><td class="muted" colspan="${16 + (showImage ? 1 : 0) + (showFocus ? 1 : 0) + (showMemo ? 1 : 0)}">${escapeHtml(emptyMessage)}</td></tr>`;
       }
 
       function renderShellOpportunity() {
@@ -863,6 +1129,7 @@
         state.sourceDraftDirty = true;
         document.querySelector("#sourceSearch").value = "";
         renderSourceData();
+        renderNonActiveProducts();
       }
 
       function removeSourceRow(index) {
@@ -928,6 +1195,9 @@
           "型号",
           "规格",
           "手机品牌",
+          "评分",
+          "评论数",
+          "近30天销量标签",
           "当前售价 EUR",
           "MSRP EUR",
           "折扣比例",
@@ -949,6 +1219,9 @@
             item.model || "",
             item.spec || "",
             item.phone_brand || "",
+            item.rating ?? "",
+            item.review_count ?? "",
+            item.monthly_sales_label || "",
             price(item.current_price) ?? "",
             price(item.msrp_price) ?? "",
             item.discount_percent || "",
@@ -973,7 +1246,7 @@
             <body>
               <table>
                 <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
-                <tbody>${bodyRows.map((row) => `<tr>${row.map((cell, index) => `<td${index <= 7 || index >= 11 ? ' class="text"' : ""}>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+                <tbody>${bodyRows.map((row) => `<tr>${row.map((cell, index) => `<td${index <= 7 || index === 10 || index >= 14 ? ' class="text"' : ""}>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
               </table>
             </body>
           </html>`;
@@ -1108,9 +1381,17 @@
       }
 
       function render() {
-        const rows = filteredProducts();
-        const focusRows = rows.filter((item) => state.focused.has(asinOf(item)));
-        const competitorRows = filteredProducts(state.competitors);
+        const detailsBaseRows = filteredProducts();
+        const focusBaseRows = detailsBaseRows.filter((item) => state.focused.has(asinOf(item)));
+        const competitorBaseRows = filteredProducts(state.competitors);
+        state.tableFilterSources = {
+          details: detailsBaseRows,
+          focus: focusBaseRows,
+          competitor: competitorBaseRows,
+        };
+        const rows = applyColumnFilters(detailsBaseRows, "details");
+        const focusRows = applyColumnFilters(focusBaseRows, "focus");
+        const competitorRows = applyColumnFilters(competitorBaseRows, "competitor");
         renderMetrics(rows);
         renderTable(rows);
         renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
@@ -1120,6 +1401,7 @@
         renderSourceData();
         renderProductAsinOptions(rows);
         renderWeeklyChanges();
+        updateColumnFilterButtons();
       }
 
       function switchView(viewId) {
@@ -1131,6 +1413,8 @@
         });
         if (viewId === "chartView") renderChart();
         if (viewId === "sourceDataView") renderSourceData();
+        if (viewId === "nonActiveView") renderNonActiveProducts();
+        closeColumnFilter();
       }
 
       function escapeHtml(value) {
@@ -1138,6 +1422,7 @@
       }
 
       async function init() {
+        initializeColumnFilters();
         const latest = await loadJson("price_results_latest.json", { products: [] });
         const history = await loadJson("price_history.json", { products: [] });
         const competitors = await loadOptionalJson("competitor_results_latest.json", { products: [] });
@@ -1160,11 +1445,24 @@
         ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
         document.querySelector("#sourceSearch").addEventListener("input", renderSourceData);
+        document.querySelector("#nonActiveSearch").addEventListener("input", renderNonActiveProducts);
         document.querySelector("#addSourceRow").addEventListener("click", addSourceRow);
         document.querySelector("#saveSourceDraft").addEventListener("click", saveSourceDraft);
         document.querySelector("#downloadSourceJson").addEventListener("click", downloadSourceJson);
         document.querySelector("#resetSourceDraft").addEventListener("click", clearSourceDraft);
         document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
+        document.querySelector("#columnFilterSearch").addEventListener("input", renderColumnFilterOptions);
+        document.querySelector("#columnFilterSelectAll").addEventListener("click", () => {
+          if (!state.activeColumnFilter) return;
+          state.activeColumnFilter.draft = new Set(state.activeColumnFilter.values);
+          renderColumnFilterOptions();
+        });
+        document.querySelector("#columnFilterClear").addEventListener("click", () => {
+          if (!state.activeColumnFilter) return;
+          state.activeColumnFilter.draft.clear();
+          renderColumnFilterOptions();
+        });
+        document.querySelector("#columnFilterApply").addEventListener("click", applyActiveColumnFilter);
         document.querySelectorAll(".tab-button").forEach((button) => {
           button.addEventListener("click", () => switchView(button.dataset.view));
         });
@@ -1191,6 +1489,31 @@
           renderShellOpportunity();
         });
         document.addEventListener("click", (event) => {
+          const filterButton = event.target.closest?.(".column-filter-button");
+          if (filterButton) {
+            openColumnFilter(filterButton);
+            return;
+          }
+          if (!event.target.closest?.("#columnFilterPopover")) closeColumnFilter();
+        });
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("column-filter-checkbox") || !state.activeColumnFilter) return;
+          const value = event.target.dataset.value;
+          if (event.target.checked) {
+            state.activeColumnFilter.draft.add(value);
+          } else {
+            state.activeColumnFilter.draft.delete(value);
+          }
+          updateColumnFilterCount();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeColumnFilter();
+        });
+        document.addEventListener("click", (event) => {
+          if (event.target.classList.contains("non-active-memo-save")) {
+            saveNonActiveMemo(event.target);
+            return;
+          }
           if (!event.target.classList.contains("memo-save")) return;
           saveMemoForButton(event.target);
         });

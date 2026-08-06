@@ -150,6 +150,12 @@ def carry_forward_valid_price(record: dict[str, Any], previous: dict[str, Any] |
         record["promotion_status"] = previous.get("promotion_status")
     if not record.get("availability"):
         record["availability"] = previous.get("availability")
+    for field in ("rating", "review_count", "monthly_sales_label"):
+        if record.get(field) in (None, ""):
+            record[field] = previous.get(field)
+            source_field = f"{field}_source"
+            if record.get(field) not in (None, ""):
+                record[source_field] = "history_carried_forward"
     record["price_source"] = "history_carried_forward"
     if record.get("msrp_price") is not None and not record.get("msrp_source"):
         record["msrp_source"] = "history_carried_forward"

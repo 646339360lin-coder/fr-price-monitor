@@ -7,6 +7,7 @@ import random
 import re
 import sys
 import urllib.robotparser
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -26,7 +27,7 @@ USER_AGENT = (
 )
 AMAZON_FR_HOST = "www.amazon.fr"
 CLEARANCE_WORDS = ("clearance", "déstockage", "destockage", "liquidation", "soldes")
-DEFAULT_POSTCODE = "06200"
+DEFAULT_POSTCODE = "75001"
 ROBOTS_CACHE: dict[str, urllib.robotparser.RobotFileParser | None] = {}
 RETRYABLE_STATUSES = {
     "location_not_postcode",
@@ -86,7 +87,9 @@ def robots_allowed(url: str, user_agent: str = USER_AGENT) -> bool:
     parser = urllib.robotparser.RobotFileParser()
     parser.set_url(robots_url)
     try:
-        parser.read()
+        request = urllib.request.Request(robots_url, headers={"User-Agent": user_agent})
+        with urllib.request.urlopen(request, timeout=15) as response:
+            parser.parse(response.read().decode("utf-8", errors="replace").splitlines())
     except Exception as exc:
         print(f"robots.txt unavailable for {parsed.netloc}: {exc}", file=sys.stderr)
         ROBOTS_CACHE[robots_url] = None
@@ -155,6 +158,7 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         (embedded.get("msrp_price"), embedded.get("msrp_source")),
     )
 
+    engagement = await extract_engagement_metrics(page, structured)
     promo = await extract_promotion_status(page)
     availability = await safe_text(page, "#availability, #outOfStock")
     image_url = await extract_main_image(page)
@@ -185,6 +189,12 @@ async def scrape_product(page: "Page", product: dict[str, Any], dry_run: bool = 
         "msrp_price": msrp_price,
         "currency": structured.get("currency") or "EUR",
         "promotion_status": promo,
+        "rating": engagement.get("rating"),
+        "review_count": engagement.get("review_count"),
+        "monthly_sales_label": engagement.get("monthly_sales_label"),
+        "rating_source": engagement.get("rating_source"),
+        "review_count_source": engagement.get("review_count_source"),
+        "monthly_sales_source": engagement.get("monthly_sales_source"),
         "availability": availability,
         "image_url": image_url,
         "product_url": url,
@@ -224,6 +234,9 @@ async def extract_structured_product(page: "Page") -> dict[str, Any]:
                 price_spec = price_spec[0] if price_spec else {}
             if not isinstance(price_spec, dict):
                 price_spec = {}
+            aggregate_rating = product.get("aggregateRating") or {}
+            if not isinstance(aggregate_rating, dict):
+                aggregate_rating = {}
             return {
                 "name": product.get("name"),
                 "brand": brand,
@@ -232,6 +245,10 @@ async def extract_structured_product(page: "Page") -> dict[str, Any]:
                 "msrp_price": normalize_price(offers.get("highPrice") or price_spec.get("price")),
                 "price_source": "json_ld",
                 "msrp_source": "json_ld",
+                "rating": normalize_rating(aggregate_rating.get("ratingValue")),
+                "review_count": normalize_count(
+                    aggregate_rating.get("reviewCount") or aggregate_rating.get("ratingCount")
+                ),
             }
     return {}
 
@@ -319,6 +336,41 @@ async def extract_promotion_status(page: "Page") -> str | None:
     return " | ".join(dict.fromkeys(chunks)) or None
 
 
+async def extract_engagement_metrics(page: "Page", structured: dict[str, Any]) -> dict[str, Any]:
+    rating = normalize_rating(structured.get("rating"))
+    rating_source = "json_ld" if rating is not None else None
+    if rating is None:
+        rating_text = await safe_attribute(page, "#acrPopover", "title")
+        if not rating_text:
+            rating_text = await safe_text(page, "#acrPopover .a-icon-alt, [data-hook='rating-out-of-text']")
+        rating = normalize_rating(rating_text)
+        rating_source = "dom_fallback" if rating is not None else None
+
+    review_count = normalize_count(structured.get("review_count"))
+    review_count_source = "json_ld" if review_count is not None else None
+    if review_count is None:
+        review_text = await safe_text(
+            page,
+            "#acrCustomerReviewText, [data-hook='total-review-count'], #averageCustomerReviews #acrCustomerReviewText",
+        )
+        review_count = normalize_count(review_text)
+        review_count_source = "dom_fallback" if review_count is not None else None
+
+    monthly_sales_label = await safe_text(
+        page,
+        "#social-proofing-faceout-title-tk_bought, #social-proofing-faceout-title, "
+        "[data-csa-c-content-id='social-proofing-faceout-title-tk_bought']",
+    )
+    return {
+        "rating": rating,
+        "review_count": review_count,
+        "monthly_sales_label": monthly_sales_label,
+        "rating_source": rating_source,
+        "review_count_source": review_count_source,
+        "monthly_sales_source": "dom_fallback" if monthly_sales_label else None,
+    }
+
+
 async def extract_main_image(page: "Page") -> str | None:
     selectors = [
         "#landingImage",
@@ -361,6 +413,18 @@ async def safe_text_content(page: "Page", selector: str) -> str | None:
         return None
     text = re.sub(r"\s+", " ", text or "").strip()
     return text or None
+
+
+async def safe_attribute(page: "Page", selector: str, attribute: str) -> str | None:
+    try:
+        locator = page.locator(selector).first
+        if await locator.count() == 0:
+            return None
+        value = await locator.get_attribute(attribute, timeout=2500)
+    except Exception:
+        return None
+    value = re.sub(r"\s+", " ", value or "").strip()
+    return value or None
 
 
 async def extract_split_amazon_price(page: "Page", selector: str) -> str | None:
@@ -432,7 +496,7 @@ async def set_delivery_postcode_via_ajax(page: "Page", postcode: str) -> bool:
                 locationType: "LOCATION_INPUT",
                 zipCode: postcode,
                 countryCode: "FR",
-                city: "Nice",
+                city: "Paris",
                 storeContext: "generic",
                 deviceType: "web",
                 pageType: "Gateway",
@@ -536,6 +600,31 @@ def normalize_price(value: Any) -> float | None:
     return round(float(match.group(1).replace(",", ".")), 2)
 
 
+def normalize_rating(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, (int, float)):
+        rating = float(value)
+    else:
+        match = re.search(r"([0-9]+(?:[.,][0-9]+)?)", str(value))
+        if not match:
+            return None
+        rating = float(match.group(1).replace(",", "."))
+    return round(rating, 2) if 0 <= rating <= 5 else None
+
+
+def normalize_count(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, (int, float)):
+        return max(0, int(value))
+    match = re.search(r"([0-9][0-9\s.\u00a0\u202f]*)", str(value))
+    if not match:
+        return None
+    digits = re.sub(r"\D", "", match.group(1))
+    return int(digits) if digits else None
+
+
 def first_number(*values: Any) -> float | None:
     for value in values:
         number = normalize_price(value)
@@ -603,6 +692,12 @@ def build_error_record(product: dict[str, Any], url: str, status: str) -> dict[s
         "msrp_price": None,
         "currency": "EUR",
         "promotion_status": None,
+        "rating": None,
+        "review_count": None,
+        "monthly_sales_label": None,
+        "rating_source": None,
+        "review_count_source": None,
+        "monthly_sales_source": None,
         "availability": None,
         "product_url": url,
         "scraped_at": utc_now_iso(),
