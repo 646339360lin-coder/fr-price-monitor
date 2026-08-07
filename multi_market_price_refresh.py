@@ -211,22 +211,31 @@ async def set_delivery_postcode_via_ajax(
                 pageType: "Gateway",
                 actionSource: "glow"
               });
-              const response = await fetch("/gp/delivery/ajax/address-change.html", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                  "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-                  "x-requested-with": "XMLHttpRequest"
-                },
-                body: params.toString()
-              });
-              if (!response.ok) return { ok: false, status: response.status };
-              const payload = await response.json().catch(() => ({}));
-              return {
-                ok: Boolean(payload.successful || payload.isAddressUpdated),
-                status: response.status,
-                payload
-              };
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 8000);
+              try {
+                const response = await fetch("/gp/delivery/ajax/address-change.html", {
+                  method: "POST",
+                  credentials: "include",
+                  signal: controller.signal,
+                  headers: {
+                    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "x-requested-with": "XMLHttpRequest"
+                  },
+                  body: params.toString()
+                });
+                if (!response.ok) return { ok: false, status: response.status };
+                const payload = await response.json().catch(() => ({}));
+                return {
+                  ok: Boolean(payload.successful || payload.isAddressUpdated),
+                  status: response.status,
+                  payload
+                };
+              } catch (error) {
+                return { ok: false, error: error?.name || "request_failed" };
+              } finally {
+                clearTimeout(timeout);
+              }
             }""",
             {
                 "postcode": postcode,
