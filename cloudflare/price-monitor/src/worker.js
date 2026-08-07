@@ -29,9 +29,16 @@ function authenticatedEmail(request) {
     .toLowerCase();
 }
 
-function requireEmployee(request) {
+function requireEmployee(request, env) {
   const email = authenticatedEmail(request);
   if (!email) throw new Response("Cloudflare Access authentication required", { status: 401 });
+  const allowed = String(env.ALLOWED_EMAILS || "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+  if (allowed.length && !allowed.includes(email)) {
+    throw new Response("Forbidden", { status: 403 });
+  }
   return email;
 }
 
@@ -168,7 +175,7 @@ async function seedHistory(request, env, url) {
 }
 
 async function marketList(request, env) {
-  requireEmployee(request);
+  requireEmployee(request, env);
   const result = await env.DB.prepare(
     `SELECT market, generated_at, total_count, success_count, stale_count
      FROM market_runs WHERE account_key = ?`
@@ -184,7 +191,7 @@ async function marketList(request, env) {
 }
 
 async function latestPrices(request, env, market) {
-  requireEmployee(request);
+  requireEmployee(request, env);
   const result = await env.DB.prepare(
     `SELECT record_json FROM latest_prices
      WHERE account_key = ? AND market = ? ORDER BY asin`
@@ -202,7 +209,7 @@ async function latestPrices(request, env, market) {
 }
 
 async function priceHistory(request, env, market, url) {
-  requireEmployee(request);
+  requireEmployee(request, env);
   const requestedAsins = String(url.searchParams.get("asins") || "")
     .split(",")
     .map((asin) => asin.trim().toUpperCase())
@@ -229,7 +236,7 @@ async function priceHistory(request, env, market, url) {
 }
 
 async function catalog(request, env, market) {
-  requireEmployee(request);
+  requireEmployee(request, env);
   const result = await env.DB.prepare(
     `SELECT active, metadata_json FROM products
      WHERE account_key = ? AND market = ? ORDER BY active DESC, asin`
@@ -251,7 +258,7 @@ async function catalog(request, env, market) {
 }
 
 async function getUserState(request, env, market) {
-  const email = requireEmployee(request);
+  const email = requireEmployee(request, env);
   const products = await env.DB.prepare(
     `SELECT asin, memo, memo_updated_at, focused FROM user_product_state
      WHERE email = ? AND account_key = ? AND market = ?`
@@ -265,7 +272,7 @@ async function getUserState(request, env, market) {
 }
 
 async function putUserState(request, env, market) {
-  const email = requireEmployee(request);
+  const email = requireEmployee(request, env);
   const payload = await request.json();
   const asin = String(payload.asin || "").trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return json({ error: "Invalid ASIN" }, 400);
@@ -295,7 +302,7 @@ async function putUserState(request, env, market) {
 }
 
 async function putShellState(request, env, market) {
-  const email = requireEmployee(request);
+  const email = requireEmployee(request, env);
   const payload = await request.json();
   const phoneBrand = String(payload.phone_brand || "").trim();
   const model = String(payload.model || "").trim();
