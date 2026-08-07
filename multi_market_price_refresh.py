@@ -239,7 +239,15 @@ async def set_delivery_postcode_via_ajax(
             f"{market['site']} ajax location: ok={(result or {}).get('ok')} "
             f"country={address.get('countryCode')} zip={address.get('zipCode')}"
         )
-        return bool(result and result.get("ok"))
+        response_country = str(address.get("countryCode") or "").upper()
+        response_postcode = normalized_postcode(address.get("zipCode"))
+        expected_postcode = normalized_postcode(postcode)
+        return bool(
+            result
+            and result.get("ok")
+            and response_country == market["country_code"]
+            and response_postcode == expected_postcode
+        )
     except Exception as exc:
         print(f"Unable to set {market['site']} postcode via ajax: {exc}", file=sys.stderr)
         return False
