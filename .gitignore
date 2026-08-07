@@ -9,6 +9,7 @@ price_results_latest.json.tmp
 price_history.json.tmp
 .runtime/
 cloudflare/price-monitor/.wrangler/
+output/playwright/
 
 # Local browser/debug artifacts
 .amazon-browser-profile/
