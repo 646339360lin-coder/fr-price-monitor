@@ -270,12 +270,14 @@ async def scrape_product(
     if not robots_allowed(url):
         return build_error_record(product, url, "blocked_by_robots_txt", market, postcode)
 
+    location_confirmed_via_api = False
     try:
         await page.goto(with_market_language(url, market), wait_until="domcontentloaded", timeout=45_000)
         await page.wait_for_timeout(1200)
         observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
         if not location_matches_postcode(observer_location, postcode, market):
             location_set = await set_delivery_postcode_via_ajax(page, postcode, market)
+            location_confirmed_via_api = location_set
             if not location_set:
                 modal_location = await set_delivery_postcode(page, postcode, market, url)
                 location_set = location_matches_postcode(modal_location, postcode, market)
@@ -341,7 +343,9 @@ async def scrape_product(
     availability = await safe_text(page, "#availability, #outOfStock")
     image_url = await extract_main_image(page)
     observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
-    location_valid = location_matches_postcode(observer_location, postcode, market)
+    location_valid = location_confirmed_via_api or location_matches_postcode(
+        observer_location, postcode, market
+    )
     if currency_mismatch or not location_valid:
         current_price = None
         msrp_price = None
