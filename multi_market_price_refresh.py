@@ -441,6 +441,8 @@ async def run(args: argparse.Namespace) -> int:
     latest_path = Path(args.latest_output or f".runtime/{market['code'].lower()}/price_results_latest.json")
     history_path = Path(args.history_output or f".runtime/{market['code'].lower()}/price_history.json")
     results: list[dict[str, Any]] = []
+    location_failure_streak = 0
+    aborted_for_location = False
 
     if args.dry_run:
         for index, product in enumerate(products, start=1):
@@ -478,12 +480,24 @@ async def run(args: argparse.Namespace) -> int:
                     )
                     print(f"  unexpected error: {exc}", file=sys.stderr)
                 results.append(record)
+                if record.get("status") == "location_not_postcode":
+                    location_failure_streak += 1
+                else:
+                    location_failure_streak = 0
+                if location_failure_streak >= 10:
+                    aborted_for_location = True
+                    print(
+                        f"{market['code']} aborting after {location_failure_streak} consecutive "
+                        "postcode verification failures",
+                        file=sys.stderr,
+                    )
+                    break
                 if index < len(products):
                     await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
             await context.close()
             await browser.close()
 
-            if args.retry_failures:
+            if args.retry_failures and not aborted_for_location:
                 results_by_key = {product_key_for_result(record): record for record in results}
                 products_by_key = {product_key_for_product(product): product for product in products}
                 for retry_round in range(1, args.retry_failures + 1):

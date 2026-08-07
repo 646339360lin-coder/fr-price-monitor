@@ -97,6 +97,7 @@ jobs:
           market_lower=$(printf '%s' "${{ matrix.market }}" | tr '[:upper:]' '[:lower:]')
           python multi_market_price_refresh.py \
             --market "${{ matrix.market }}" \
+            --retry-failures 1 \
             --latest-output ".runtime/$market_lower/price_results_latest.json" \
             --history-output ".runtime/$market_lower/price_history.json"
 
