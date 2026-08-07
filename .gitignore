@@ -7,6 +7,8 @@ playwright-report/
 test-results/
 price_results_latest.json.tmp
 price_history.json.tmp
+.runtime/
+cloudflare/price-monitor/.wrangler/
 
 # Local browser/debug artifacts
 .amazon-browser-profile/

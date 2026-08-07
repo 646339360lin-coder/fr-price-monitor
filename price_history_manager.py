@@ -99,6 +99,10 @@ def merge_price_results(
     new_records: list[dict[str, Any]],
     latest_path: Path = LATEST_FILE,
     history_path: Path = HISTORY_FILE,
+    *,
+    market: str = "FR",
+    site: str = "Amazon.fr",
+    currency: str = "EUR",
 ) -> dict[str, Any]:
     history = load_json(history_path, {"generated_at": None, "products": []})
     previous_by_key = latest_history_by_product(history)
@@ -116,9 +120,9 @@ def merge_price_results(
 
     latest_payload = {
         "generated_at": scrape_time,
-        "market": "FR",
-        "site": "Amazon.fr",
-        "currency": "EUR",
+        "market": market,
+        "site": site,
+        "currency": currency,
         "products": normalized_records,
     }
 
@@ -128,9 +132,9 @@ def merge_price_results(
 
     history_payload = {
         "generated_at": scrape_time,
-        "market": "FR",
-        "site": "Amazon.fr",
-        "currency": "EUR",
+        "market": market,
+        "site": site,
+        "currency": currency,
         "products": history_products,
     }
 

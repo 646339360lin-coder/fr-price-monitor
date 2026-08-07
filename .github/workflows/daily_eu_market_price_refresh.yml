@@ -1,0 +1,112 @@
+name: Daily Amazon UK DE IT ES Price Refresh
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+    - cron: "40 4 * * *"
+    - cron: "50 5 * * *"
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      market:
+        description: "Marketplace to refresh"
+        required: true
+        default: "ALL"
+        type: choice
+        options:
+          - ALL
+          - UK
+          - DE
+          - IT
+          - ES
+
+permissions:
+  contents: read
+
+jobs:
+  select-markets:
+    runs-on: ubuntu-latest
+    outputs:
+      markets: ${{ steps.select.outputs.markets }}
+    steps:
+      - id: select
+        name: Select scheduled marketplace
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          REQUESTED_MARKET: ${{ inputs.market }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            case "$REQUESTED_MARKET" in
+              ALL) markets='["UK","DE","IT","ES"]' ;;
+              UK|DE|IT|ES) markets="[\"$REQUESTED_MARKET\"]" ;;
+              *) exit 1 ;;
+            esac
+          else
+            case "$SCHEDULE" in
+              "30 3 * * *") markets='["UK"]' ;;
+              "40 4 * * *") markets='["DE"]' ;;
+              "50 5 * * *") markets='["IT"]' ;;
+              "0 7 * * *") markets='["ES"]' ;;
+              *) exit 1 ;;
+            esac
+          fi
+          echo "markets=$markets" >> "$GITHUB_OUTPUT"
+
+  refresh:
+    needs: select-markets
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        market: ${{ fromJSON(needs.select-markets.outputs.markets) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    concurrency:
+      group: price-refresh-${{ matrix.market }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Download previous valid observations
+        env:
+          PRICE_MONITOR_URL: https://price-ingest.tentoki.online
+          PRICE_MONITOR_INGEST_TOKEN: ${{ secrets.PRICE_MONITOR_INGEST_TOKEN }}
+        run: |
+          market_lower=$(printf '%s' "${{ matrix.market }}" | tr '[:upper:]' '[:lower:]')
+          python cloudflare_price_sync.py download-seed \
+            --market "${{ matrix.market }}" \
+            --output ".runtime/$market_lower/price_history.json"
+
+      - name: Refresh marketplace prices
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          market_lower=$(printf '%s' "${{ matrix.market }}" | tr '[:upper:]' '[:lower:]')
+          python multi_market_price_refresh.py \
+            --market "${{ matrix.market }}" \
+            --latest-output ".runtime/$market_lower/price_results_latest.json" \
+            --history-output ".runtime/$market_lower/price_history.json"
+
+      - name: Upload results to Cloudflare
+        env:
+          PRICE_MONITOR_URL: https://price-ingest.tentoki.online
+          PRICE_MONITOR_INGEST_TOKEN: ${{ secrets.PRICE_MONITOR_INGEST_TOKEN }}
+        run: |
+          market_lower=$(printf '%s' "${{ matrix.market }}" | tr '[:upper:]' '[:lower:]')
+          python cloudflare_price_sync.py upload \
+            --market "${{ matrix.market }}" \
+            --latest ".runtime/$market_lower/price_results_latest.json" \
+            --catalog product_list.json

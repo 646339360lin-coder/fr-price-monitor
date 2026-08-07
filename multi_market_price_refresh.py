@@ -1,0 +1,546 @@
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import random
+import re
+import sys
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse, urlunparse
+
+from daily_price_refresh import (
+    USER_AGENT,
+    build_error_record as build_fr_error_record,
+    dismiss_cookie_banner,
+    extract_dom_prices,
+    extract_embedded_prices,
+    extract_engagement_metrics,
+    extract_main_image,
+    extract_promotion_status,
+    extract_structured_product,
+    extract_asin,
+    first_number,
+    first_source_for_price,
+    load_product_list,
+    product_key_for_product,
+    product_key_for_result,
+    retryable_status,
+    robots_allowed,
+    safe_text,
+    should_replace_with_retry,
+    utc_now_iso,
+)
+from price_history_manager import merge_price_results
+
+if TYPE_CHECKING:
+    from playwright.async_api import BrowserContext, Page
+
+
+MARKETPLACE_FILE = Path("marketplaces.json")
+
+
+def load_marketplace(code: str, path: Path = MARKETPLACE_FILE) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    market = payload.get(code.upper())
+    if not isinstance(market, dict):
+        raise ValueError(f"Unknown marketplace: {code}")
+    required = {
+        "site",
+        "host",
+        "base_url",
+        "locale",
+        "language_query",
+        "accept_language",
+        "timezone",
+        "currency",
+        "postcode",
+        "country_code",
+        "city",
+    }
+    missing = sorted(required - market.keys())
+    if missing:
+        raise ValueError(f"Marketplace {code} is missing: {', '.join(missing)}")
+    return {"code": code.upper(), **market}
+
+
+def normalize_product_url(product: dict[str, Any], market: dict[str, Any]) -> str:
+    asin = str(product.get("asin") or extract_asin(str(product.get("url") or "")) or "").strip().upper()
+    if not re.fullmatch(r"[A-Z0-9]{10}", asin):
+        raise ValueError(f"Missing or invalid ASIN: {product.get('asin') or product.get('url')}")
+    return f"{market['base_url']}/dp/{asin}"
+
+
+def with_market_language(url: str, market: dict[str, Any]) -> str:
+    parsed = urlparse(url)
+    language = f"language={market['language_query']}"
+    query = f"{parsed.query}&{language}" if parsed.query else language
+    return urlunparse(parsed._replace(query=query))
+
+
+def normalized_postcode(value: Any) -> str:
+    return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+
+def location_matches_postcode(
+    location: str | None, postcode: str, market: dict[str, Any] | None = None
+) -> bool:
+    expected = normalized_postcode(postcode)
+    actual = normalized_postcode(location)
+    if expected and expected in actual:
+        return True
+    return bool(market and market.get("country_code") == "GB" and expected[:5] in actual)
+
+
+def currency_from_text(value: Any) -> str | None:
+    text = str(value or "")
+    if "£" in text or re.search(r"\bGBP\b", text, re.I):
+        return "GBP"
+    if "€" in text or re.search(r"\bEUR\b", text, re.I):
+        return "EUR"
+    if "$" in text or re.search(r"\bUSD\b", text, re.I):
+        return "USD"
+    return None
+
+
+async def add_market_cookies(context: "BrowserContext", market: dict[str, Any]) -> None:
+    cookies = [
+        {"name": "i18n-prefs", "value": market["currency"], "url": market["base_url"]},
+    ]
+    if market.get("locale_cookie_name") and market.get("locale_cookie"):
+        cookies.append(
+            {
+                "name": market["locale_cookie_name"],
+                "value": market["locale_cookie"],
+                "url": market["base_url"],
+            }
+        )
+    await context.add_cookies(cookies)
+
+
+async def set_delivery_postcode(
+    page: "Page",
+    postcode: str,
+    market: dict[str, Any],
+    start_url: str | None = None,
+) -> str:
+    target_url = with_market_language(start_url or f"{market['base_url']}/", market)
+    await page.goto(target_url, wait_until="domcontentloaded", timeout=45_000)
+    await page.wait_for_timeout(1800)
+    await dismiss_cookie_banner(page)
+    current = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+    if location_matches_postcode(current, postcode, market):
+        return current or ""
+
+    if await set_delivery_postcode_via_ajax(page, postcode, market):
+        await page.goto(target_url, wait_until="domcontentloaded", timeout=45_000)
+        await page.wait_for_timeout(1200)
+        current = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+        if location_matches_postcode(current, postcode, market):
+            return current or ""
+
+    try:
+        opened = False
+        for selector in (
+            "#nav-global-location-popover-link",
+            "#nav-global-location-data-modal-action",
+        ):
+            try:
+                locator = page.locator(selector).first
+                if await locator.count():
+                    await locator.click(timeout=4000)
+                    opened = True
+                    break
+            except Exception:
+                continue
+        if not opened:
+            raise RuntimeError("location modal trigger not found")
+        await page.wait_for_timeout(900)
+        postcode_input = page.locator("#GLUXZipUpdateInput, #GLUXZipUpdateInput_0").first
+        await postcode_input.fill(postcode, timeout=8000)
+        submitted = False
+        for selector in (
+            "#GLUXZipUpdate",
+            "#GLUXZipUpdate .a-button-input",
+            "input[aria-labelledby='GLUXZipUpdate-announce']",
+        ):
+            try:
+                locator = page.locator(selector).first
+                if await locator.count():
+                    await locator.click(timeout=4000)
+                    submitted = True
+                    break
+            except Exception:
+                continue
+        if not submitted:
+            await postcode_input.press("Enter")
+        await page.wait_for_timeout(2200)
+        for selector in (
+            "#GLUXConfirmClose",
+            ".a-popover-footer #GLUXConfirmClose",
+            "button[name='glowDoneButton']",
+        ):
+            try:
+                if await page.locator(selector).count():
+                    await page.locator(selector).first.click(timeout=2500)
+                    break
+            except Exception:
+                continue
+        await page.goto(target_url, wait_until="domcontentloaded", timeout=45_000)
+        await page.wait_for_timeout(1000)
+    except Exception as exc:
+        print(f"Unable to set {market['site']} postcode {postcode}: {exc}", file=sys.stderr)
+    return await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link") or ""
+
+
+async def set_delivery_postcode_via_ajax(
+    page: "Page", postcode: str, market: dict[str, Any]
+) -> bool:
+    try:
+        result = await page.evaluate(
+            """async (location) => {
+              const params = new URLSearchParams({
+                locationType: "LOCATION_INPUT",
+                zipCode: location.postcode,
+                countryCode: location.countryCode,
+                city: location.city,
+                storeContext: "generic",
+                deviceType: "web",
+                pageType: "Gateway",
+                actionSource: "glow"
+              });
+              const response = await fetch("/gp/delivery/ajax/address-change.html", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                  "x-requested-with": "XMLHttpRequest"
+                },
+                body: params.toString()
+              });
+              if (!response.ok) return { ok: false, status: response.status };
+              const payload = await response.json().catch(() => ({}));
+              return {
+                ok: Boolean(payload.successful || payload.isAddressUpdated),
+                status: response.status,
+                payload
+              };
+            }""",
+            {
+                "postcode": postcode,
+                "countryCode": market["country_code"],
+                "city": market["city"],
+            },
+        )
+        address = ((result or {}).get("payload") or {}).get("address") or {}
+        print(
+            f"{market['site']} ajax location: ok={(result or {}).get('ok')} "
+            f"country={address.get('countryCode')} zip={address.get('zipCode')}"
+        )
+        return bool(result and result.get("ok"))
+    except Exception as exc:
+        print(f"Unable to set {market['site']} postcode via ajax: {exc}", file=sys.stderr)
+        return False
+
+
+def build_error_record(
+    product: dict[str, Any], url: str, status: str, market: dict[str, Any], postcode: str
+) -> dict[str, Any]:
+    record = build_fr_error_record(product, url, status)
+    record.update(
+        {
+            "currency": market["currency"],
+            "source": market["host"].removeprefix("www."),
+            "observer_postcode": postcode,
+            "market": market["code"],
+        }
+    )
+    return record
+
+
+async def scrape_product(
+    page: "Page",
+    product: dict[str, Any],
+    market: dict[str, Any],
+    postcode: str,
+) -> dict[str, Any]:
+    url = normalize_product_url(product, market)
+    if not robots_allowed(url):
+        return build_error_record(product, url, "blocked_by_robots_txt", market, postcode)
+
+    try:
+        await page.goto(with_market_language(url, market), wait_until="domcontentloaded", timeout=45_000)
+        await page.wait_for_timeout(1200)
+        observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+        if not location_matches_postcode(observer_location, postcode, market):
+            location_set = await set_delivery_postcode_via_ajax(page, postcode, market)
+            if not location_set:
+                modal_location = await set_delivery_postcode(page, postcode, market, url)
+                location_set = location_matches_postcode(modal_location, postcode, market)
+            if location_set:
+                await page.goto(
+                    with_market_language(url, market), wait_until="domcontentloaded", timeout=45_000
+                )
+                await page.wait_for_timeout(1200)
+    except Exception as exc:
+        status = "timeout" if exc.__class__.__name__ == "TimeoutError" else f"navigation_error: {exc}"
+        return build_error_record(product, url, status, market, postcode)
+
+    page_title = await page.title()
+    if any(word in page_title.lower() for word in market.get("not_found_words", [])):
+        record = build_error_record(product, url, "page_not_found", market, postcode)
+        record["page_title"] = page_title
+        record["observer_location"] = await safe_text(
+            page, "#glow-ingress-line2, #nav-global-location-popover-link"
+        )
+        return record
+
+    html = await page.content()
+    title = await safe_text(page, "#productTitle")
+    structured = await extract_structured_product(page)
+    embedded = extract_embedded_prices(html)
+    dom_prices = await extract_dom_prices(page)
+    page_text = ((title or "") + " " + html[:50_000]).lower()
+    clearance = any(word in page_text for word in market.get("clearance_words", []))
+
+    current_price = first_number(
+        structured.get("price"), dom_prices.get("current_price"), embedded.get("current_price")
+    )
+    current_source = first_source_for_price(
+        current_price,
+        (structured.get("price"), structured.get("price_source")),
+        (dom_prices.get("current_price"), dom_prices.get("price_source")),
+        (embedded.get("current_price"), embedded.get("price_source")),
+    )
+    msrp_price = first_number(
+        structured.get("msrp_price"),
+        None if clearance else dom_prices.get("msrp_price"),
+        embedded.get("msrp_price"),
+    )
+    msrp_source = first_source_for_price(
+        msrp_price,
+        (structured.get("msrp_price"), structured.get("msrp_source")),
+        (None if clearance else dom_prices.get("msrp_price"), dom_prices.get("msrp_source")),
+        (embedded.get("msrp_price"), embedded.get("msrp_source")),
+    )
+
+    if current_source == "json_ld":
+        detected_currency = structured.get("currency")
+    elif current_source == "dom_fallback":
+        detected_currency = currency_from_text(dom_prices.get("current_raw"))
+    else:
+        detected_currency = None
+    currency_mismatch = bool(
+        detected_currency and str(detected_currency).upper() != market["currency"]
+    )
+
+    engagement = await extract_engagement_metrics(page, structured)
+    promotion = await extract_promotion_status(page)
+    availability = await safe_text(page, "#availability, #outOfStock")
+    image_url = await extract_main_image(page)
+    observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
+    location_valid = location_matches_postcode(observer_location, postcode, market)
+    if currency_mismatch or not location_valid:
+        current_price = None
+        msrp_price = None
+        current_source = None
+        msrp_source = None
+
+    if currency_mismatch:
+        status = f"currency_mismatch:{detected_currency}"
+    elif not location_valid:
+        status = "location_not_postcode"
+    elif current_price is None:
+        status = "price_missing"
+    else:
+        status = "ok"
+
+    return {
+        "product_id": product.get("id") or extract_asin(url) or url,
+        "asin": extract_asin(url),
+        "product_name": structured.get("name") or title or product.get("name"),
+        "brand": structured.get("brand") or product.get("brand"),
+        "category": product.get("category"),
+        "type": product.get("type") or product.get("category"),
+        "style": product.get("style"),
+        "model": product.get("model"),
+        "spec": product.get("spec"),
+        "phone_brand": product.get("phone_brand"),
+        "sku": product.get("sku"),
+        "isku": product.get("isku"),
+        "fnsku": product.get("fnsku"),
+        "source_row": product.get("source_row"),
+        "product_status": product.get("product_status"),
+        "current_price": current_price,
+        "msrp_price": msrp_price,
+        "currency": market["currency"],
+        "detected_currency": detected_currency,
+        "promotion_status": promotion,
+        "rating": engagement.get("rating"),
+        "review_count": engagement.get("review_count"),
+        "monthly_sales_label": engagement.get("monthly_sales_label"),
+        "rating_source": engagement.get("rating_source"),
+        "review_count_source": engagement.get("review_count_source"),
+        "monthly_sales_source": engagement.get("monthly_sales_source"),
+        "availability": availability,
+        "image_url": image_url,
+        "product_url": url,
+        "scraped_at": utc_now_iso(),
+        "source": market["host"].removeprefix("www."),
+        "market": market["code"],
+        "observer_postcode": postcode,
+        "observer_location": observer_location,
+        "price_source": current_source,
+        "msrp_source": msrp_source,
+        "clearance_detected": clearance,
+        "status": status,
+    }
+
+
+async def run(args: argparse.Namespace) -> int:
+    market = load_marketplace(args.market, Path(args.marketplace_file))
+    postcode = args.postcode or market["postcode"]
+    products = load_product_list(Path(args.product_list))
+    if args.asin:
+        requested_asin = args.asin.strip().upper()
+        products = [
+            product
+            for product in products
+            if str(product.get("asin") or extract_asin(str(product.get("url") or "")) or "").upper()
+            == requested_asin
+        ]
+    if args.limit:
+        products = products[: args.limit]
+    if not products:
+        print(f"No enabled products found for {market['site']}")
+        return 1
+
+    latest_path = Path(args.latest_output or f".runtime/{market['code'].lower()}/price_results_latest.json")
+    history_path = Path(args.history_output or f".runtime/{market['code'].lower()}/price_history.json")
+    results: list[dict[str, Any]] = []
+
+    if args.dry_run:
+        for index, product in enumerate(products, start=1):
+            url = normalize_product_url(product, market)
+            print(f"[{index}/{len(products)}] dry-run {market['code']} {url}")
+            results.append(build_error_record(product, url, "dry_run", market, postcode))
+    else:
+        from playwright.async_api import async_playwright
+
+        context_options = {
+            "user_agent": USER_AGENT,
+            "locale": market["locale"],
+            "timezone_id": market["timezone"],
+            "viewport": {"width": 1365, "height": 900},
+            "extra_http_headers": {"Accept-Language": market["accept_language"]},
+        }
+        async with async_playwright() as playwright:
+            browser = await playwright.chromium.launch(headless=not args.headful)
+            context = await browser.new_context(**context_options)
+            await add_market_cookies(context, market)
+            page = await context.new_page()
+            if not args.skip_location:
+                location = await set_delivery_postcode(
+                    page, postcode, market, normalize_product_url(products[0], market)
+                )
+                print(f"{market['site']} delivery location: {location or 'not captured'}")
+            for index, product in enumerate(products, start=1):
+                url = normalize_product_url(product, market)
+                print(f"[{index}/{len(products)}] {market['code']} {product.get('brand')} {url}")
+                try:
+                    record = await scrape_product(page, product, market, postcode)
+                except Exception as exc:
+                    record = build_error_record(
+                        product, url, f"unexpected_error: {exc}", market, postcode
+                    )
+                    print(f"  unexpected error: {exc}", file=sys.stderr)
+                results.append(record)
+                if index < len(products):
+                    await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
+            await context.close()
+            await browser.close()
+
+            if args.retry_failures:
+                results_by_key = {product_key_for_result(record): record for record in results}
+                products_by_key = {product_key_for_product(product): product for product in products}
+                for retry_round in range(1, args.retry_failures + 1):
+                    retry_products = [
+                        products_by_key[key]
+                        for key, record in results_by_key.items()
+                        if retryable_status(record.get("status")) and key in products_by_key
+                    ]
+                    if not retry_products:
+                        break
+                    print(f"{market['code']} retry round {retry_round}: {len(retry_products)} products")
+                    retry_browser = await playwright.chromium.launch(headless=not args.headful)
+                    retry_context = await retry_browser.new_context(**context_options)
+                    await add_market_cookies(retry_context, market)
+                    retry_page = await retry_context.new_page()
+                    if not args.skip_location:
+                        location = await set_delivery_postcode(
+                            retry_page,
+                            postcode,
+                            market,
+                            normalize_product_url(retry_products[0], market),
+                        )
+                        print(f"{market['site']} retry location: {location or 'not captured'}")
+                    for index, product in enumerate(retry_products, start=1):
+                        url = normalize_product_url(product, market)
+                        try:
+                            retry_record = await scrape_product(
+                                retry_page, product, market, postcode
+                            )
+                        except Exception as exc:
+                            retry_record = build_error_record(
+                                product, url, f"unexpected_error: {exc}", market, postcode
+                            )
+                        key = product_key_for_result(retry_record)
+                        previous = results_by_key.get(key)
+                        if previous and should_replace_with_retry(previous, retry_record):
+                            results_by_key[key] = retry_record
+                        if index < len(retry_products):
+                            await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
+                    await retry_context.close()
+                    await retry_browser.close()
+                results = [results_by_key[product_key_for_product(product)] for product in products]
+
+    latest = merge_price_results(
+        results,
+        latest_path=latest_path,
+        history_path=history_path,
+        market=market["code"],
+        site=market["site"],
+        currency=market["currency"],
+    )
+    ok_count = sum(1 for item in latest["products"] if item.get("status") == "ok")
+    print(
+        f"{market['code']} wrote {len(latest['products'])} records to {latest_path}; "
+        f"ok={ok_count}"
+    )
+    return 0 if ok_count or args.allow_empty or args.dry_run else 2
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Amazon UK/DE/IT/ES price refresh")
+    parser.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES"))
+    parser.add_argument("--marketplace-file", default=str(MARKETPLACE_FILE))
+    parser.add_argument("--product-list", default="product_list.json")
+    parser.add_argument("--latest-output")
+    parser.add_argument("--history-output")
+    parser.add_argument("--postcode")
+    parser.add_argument("--min-delay", type=float, default=1.0)
+    parser.add_argument("--max-delay", type=float, default=3.0)
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--asin", help="Scrape one specific ASIN for validation")
+    parser.add_argument("--skip-location", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--headful", action="store_true")
+    parser.add_argument("--allow-empty", action="store_true")
+    parser.add_argument("--retry-failures", type=int, default=2)
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    raise SystemExit(asyncio.run(run(parse_args())))

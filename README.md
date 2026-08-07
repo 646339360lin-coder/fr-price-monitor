@@ -128,6 +128,35 @@ GitHub Secrets 使用以下名称：
 
 注意：Amazon 可能出现验证码、地区价格差异或临时屏蔽。脚本会把异常写入 `status` 字段，避免误当成有效价格。
 
+## 英德意西统一员工看板
+
+法国看板继续使用原来的 GitHub Pages、JSON 文件和 `Daily Amazon.fr Price Refresh` 工作流，现有地址与抓取规则不变。
+
+英国、德国、意大利和西班牙使用同一份 WPS 产品清单，并通过以下链路运行：
+
+1. `.github/workflows/daily_eu_market_price_refresh.yml` 在 GitHub Actions 中按站点错峰启动 Playwright。
+2. `multi_market_price_refresh.py` 分别设置当地语言、币种和配送邮编后抓取 Amazon 页面。
+3. `cloudflare_price_sync.py` 把本次结果上传到 Cloudflare D1；四站价格 JSON 不提交到公开 Git 仓库。
+4. `https://price.tentoki.online` 从 D1 读取数据，并通过顶部按钮切换英国、德国、意大利和西班牙。
+
+四站自动运行时间（UTC）：
+
+- 英国：03:30
+- 德国：04:40
+- 意大利：05:50
+- 西班牙：07:00
+
+也可以在 GitHub Actions 中手动运行 `Daily Amazon UK DE IT ES Price Refresh`，选择单个站点或 `ALL`。仓库需要配置 Actions Secret `PRICE_MONITOR_INGEST_TOKEN`；该值同时保存为 Cloudflare Worker 的 `INGEST_TOKEN`，不能写入代码或提交记录。
+
+Cloudflare 目录说明：
+
+- `cloudflare/price-monitor/src/worker.js`：D1 API、员工备忘与重点关注状态接口
+- `cloudflare/price-monitor/public/index.html`：四站统一看板
+- `cloudflare/price-monitor/migrations/`：D1 数据表
+- `cloudflare/price-monitor/wrangler.jsonc`：Worker、D1 与自定义域名配置
+
+`price.tentoki.online` 应由 Cloudflare Access 保护，只允许已登记的员工邮箱访问。`price-ingest.tentoki.online` 只供 GitHub Actions 上传数据，Worker 会拒绝该域名上的看板和价格查询接口。
+
 ## 从零创建 GitHub 仓库
 
 1. 注册或登录 GitHub。

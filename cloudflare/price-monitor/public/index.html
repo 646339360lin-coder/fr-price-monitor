@@ -1,0 +1,1659 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Amazon 欧洲站价格监控看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --text: #172033;
+        --muted: #647084;
+        --line: #d9dee8;
+        --accent: #2563eb;
+        --good: #047857;
+        --warn: #b45309;
+        --bad: #b91c1c;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); }
+      header { padding: 28px clamp(16px, 4vw, 48px) 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+      h1 { margin: 4px 0 8px; font-size: clamp(24px, 3vw, 36px); }
+      h2 { margin: 0 0 14px; font-size: 18px; }
+      .eyebrow { margin: 0; color: var(--accent); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 12px; }
+      .subtitle { margin: 0; color: var(--muted); }
+      .market-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+      .market-button { border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; background: #fff; color: var(--text); font-weight: 750; }
+      .market-button.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+      main { padding: 22px clamp(16px, 4vw, 48px) 42px; display: grid; gap: 18px; }
+      section, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+      .data-status { display: none; border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+      .data-status.active { display: block; }
+      .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
+      label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+      select, input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit; background: white; color: var(--text); }
+      .metrics { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 12px; }
+      .metric { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #fbfcfe; text-align: left; color: var(--text); font: inherit; }
+      .metric-filter { cursor: pointer; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+      .metric-filter:hover { border-color: #93c5fd; background: #f3f8ff; }
+      .metric-filter.active { border-color: var(--accent); background: #eff6ff; box-shadow: inset 0 0 0 1px var(--accent); }
+      .metric-filter.active span, .metric-filter.active strong { color: var(--accent); }
+      .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+      .metric strong { font-size: 24px; }
+      .view-tabs { display: flex; flex-wrap: wrap; gap: 10px; background: transparent; border: 0; padding: 0; }
+      .tab-button { border: 1px solid var(--line); border-radius: 8px; padding: 10px 16px; background: var(--panel); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+      .tab-button.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+      .view-panel { display: none; }
+      .view-panel.active { display: block; }
+      .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+      table { width: 100%; border-collapse: collapse; min-width: 2240px; }
+      th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
+      th { background: #f1f4f8; color: #344055; position: sticky; top: 0; z-index: 1; }
+      .column-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: max-content; }
+      .column-filter-button { width: 24px; height: 24px; flex: 0 0 24px; border: 1px solid transparent; border-radius: 5px; padding: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+      .column-filter-button:hover, .column-filter-button.active { border-color: #93c5fd; background: #dbeafe; color: #1d4ed8; }
+      .column-filter-popover { position: fixed; z-index: 30; width: min(320px, calc(100vw - 24px)); max-height: min(520px, calc(100vh - 24px)); overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 16px 40px rgba(15, 23, 42, .18); padding: 12px; }
+      .column-filter-popover[hidden] { display: none; }
+      .column-filter-title { margin: 0 0 10px; font-size: 14px; font-weight: 800; }
+      .column-filter-search { margin-bottom: 8px; }
+      .column-filter-options { display: grid; gap: 2px; max-height: 280px; overflow: auto; padding: 4px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .column-filter-option { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 8px; padding: 6px 4px; color: var(--text); font-weight: 500; cursor: pointer; }
+      .column-filter-option input { width: auto; margin: 2px 0 0; }
+      .column-filter-option span { overflow-wrap: anywhere; }
+      .column-filter-count { margin: 8px 0; color: var(--muted); font-size: 12px; }
+      .column-filter-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .column-filter-actions button { border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; background: #f8fafc; color: var(--text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+      .column-filter-actions button.primary { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+      tr:hover td { background: #f9fbff; }
+      .asin-link { font-weight: 700; white-space: nowrap; }
+      .focus-cell { min-width: 92px; }
+      .focus-label { display: inline-flex; grid-template-columns: none; gap: 6px; align-items: center; color: var(--text); font-size: 13px; font-weight: 700; }
+      .focus-checkbox { width: auto; }
+      .thumb { width: 54px; height: 54px; object-fit: contain; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+      .thumb-placeholder { width: 54px; height: 54px; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 6px; color: var(--muted); font-size: 12px; }
+      .memo-cell { min-width: 220px; }
+      .memo-input { width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: inherit; color: var(--text); background: white; }
+      .memo-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+      .memo-save { border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; background: #f8fafc; color: var(--text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+      .memo-date { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
+      .opportunity-filters { display: grid; grid-template-columns: minmax(180px, 240px) minmax(220px, 1fr) minmax(180px, 240px); gap: 12px; margin-bottom: 14px; }
+      .opportunity-table { min-width: 1180px; }
+      .opportunity-check { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+      .opportunity-check input { width: auto; }
+      .asin-list { display: grid; gap: 4px; }
+      .memo-stack { display: grid; gap: 10px; min-width: 260px; }
+      .memo-stack-item { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+      .memo-stack-item:last-child { border-bottom: 0; padding-bottom: 0; }
+      .price { font-weight: 700; }
+      .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; background: #eef2ff; color: #3730a3; }
+      .badge.good { background: #ecfdf5; color: var(--good); }
+      .badge.warn { background: #fffbeb; color: var(--warn); }
+      .badge.bad { background: #fef2f2; color: var(--bad); }
+      .muted { color: var(--muted); }
+      .summary-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .summary-list details { border: 1px solid var(--line); border-radius: 8px; background: #fbfcfe; }
+      .summary-list summary { display: grid; grid-template-columns: minmax(140px, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; cursor: pointer; font-weight: 700; }
+      .summary-count { color: var(--muted); font-size: 20px; font-weight: 600; }
+      .change-detail { padding: 0 16px 16px; overflow: auto; }
+      .change-table { min-width: 860px; }
+      .chart-controls { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+      .chart-panel { min-height: 420px; }
+      .source-toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) repeat(4, auto); gap: 10px; align-items: end; margin-bottom: 12px; }
+      .source-toolbar button, .source-row-action { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: #f8fafc; color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+      .source-toolbar button.primary { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+      .source-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; color: var(--muted); font-size: 13px; }
+      .source-table { min-width: 2100px; }
+      .non-active-table { min-width: 1680px; }
+      .source-table input, .source-table select { min-width: 120px; padding: 7px 8px; font-size: 12px; }
+      .source-table .source-url { min-width: 260px; }
+      .source-table .source-model { min-width: 220px; }
+      .source-table .source-enabled { width: auto; min-width: 0; }
+      .panel-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+      .panel-toolbar button { border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; background: #eff6ff; color: var(--accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+      .panel-toolbar .toolbar-note { color: var(--muted); font-size: 13px; }
+      canvas { max-height: 320px; }
+      a { color: var(--accent); text-decoration: none; }
+      @media (max-width: 980px) {
+        .filters, .metrics, .chart-controls { grid-template-columns: 1fr; }
+        table { min-width: 1180px; }
+        main, header { padding-left: 14px; padding-right: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <p class="eyebrow" id="marketEyebrow">Amazon Europe Price Monitor</p>
+      <h1 id="marketTitle">欧洲市场手机配件价格监控</h1>
+      <p class="subtitle" id="marketSubtitle">覆盖WPS产品清单中的新品和正常在售ASIN。</p>
+      <nav class="market-nav" aria-label="国家站点切换">
+        <a class="market-button" data-market="UK" href="/?market=UK">英国站</a>
+        <a class="market-button" data-market="DE" href="/?market=DE">德国站</a>
+        <a class="market-button" data-market="IT" href="/?market=IT">意大利站</a>
+        <a class="market-button" data-market="ES" href="/?market=ES">西班牙站</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="data-status" id="dataStatus"></section>
+
+      <section class="filters">
+        <label>品牌<select id="brandFilter"><option value="">全部品牌</option></select></label>
+        <label>类型<select id="categoryFilter"><option value="">全部类型</option></select></label>
+        <label>款式<select id="styleFilter"><option value="">全部款式</option></select></label>
+        <label>重点型号<select id="modelFilter"><option value="">全部型号</option></select></label>
+        <label>自定义搜索<input id="searchQuery" type="search" placeholder="ASIN / 型号 / 款式 / 备注" /></label>
+        <label>最低价<input id="minPrice" type="number" min="0" step="0.01" placeholder="" /></label>
+        <label>最高价<input id="maxPrice" type="number" min="0" step="0.01" placeholder="" /></label>
+      </section>
+
+      <section class="metrics" id="metrics"></section>
+
+      <section class="view-tabs" aria-label="看板页面切换">
+        <button class="tab-button active" type="button" data-view="detailsView" aria-selected="true">商品明细</button>
+        <button class="tab-button" type="button" data-view="sourceDataView" aria-selected="false">原始数据登记表</button>
+        <button class="tab-button" type="button" data-view="nonActiveView" aria-selected="false">非在售产品</button>
+        <button class="tab-button" type="button" data-view="focusView" aria-selected="false">重点关注</button>
+        <button class="tab-button" type="button" data-view="competitorView" aria-selected="false">竞品跟踪</button>
+        <button class="tab-button" type="button" data-view="shellOpportunityView" aria-selected="false">清水壳机会跟踪</button>
+        <button class="tab-button" type="button" data-view="chartView" aria-selected="false">价格趋势</button>
+        <button class="tab-button" type="button" data-view="changesView" aria-selected="false">本周价格异动统计</button>
+      </section>
+
+      <section class="view-panel" id="nonActiveView">
+        <h2>非在售产品</h2>
+        <div class="source-toolbar">
+          <label>查找非在售产品<input id="nonActiveSearch" type="search" placeholder="SKU / ASIN / 型号 / 款式 / 状态" /></label>
+        </div>
+        <div class="source-meta" id="nonActiveStatus"></div>
+        <div class="table-wrap">
+          <table class="non-active-table">
+            <thead>
+              <tr>
+                <th>SKU</th><th>ASIN</th><th>产品状态</th><th>类型</th><th>款式</th><th>型号</th>
+                <th>规格</th><th>手机品牌</th><th>iSKU</th><th>FNSKU</th><th>源表行</th><th>备忘</th>
+              </tr>
+            </thead>
+            <tbody id="nonActiveRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel" id="sourceDataView">
+        <h2>原始数据登记表</h2>
+        <div class="source-toolbar">
+          <label>查找原始数据<input id="sourceSearch" type="search" placeholder="ASIN / 型号 / 款式 / SKU / 状态" /></label>
+          <button id="addSourceRow" class="primary" type="button">新增 ASIN 行</button>
+          <button id="saveSourceDraft" type="button">保存到浏览器</button>
+          <button id="downloadSourceJson" type="button">下载 product_list.json</button>
+          <button id="resetSourceDraft" type="button">还原原始数据</button>
+        </div>
+        <div class="source-meta" id="sourceDataStatus"></div>
+        <div class="table-wrap">
+          <table class="source-table">
+            <thead>
+              <tr>
+                <th>ASIN</th>
+                <th>URL</th>
+                <th>品牌</th>
+                <th>类型</th>
+                <th>款式</th>
+                <th>型号</th>
+                <th>规格</th>
+                <th>手机品牌</th>
+                <th>SKU</th>
+                <th>iSKU</th>
+                <th>FNSKU</th>
+                <th>源表行</th>
+                <th>产品状态</th>
+                <th>启用爬取</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="sourceDataRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel active" id="detailsView">
+        <h2>商品明细</h2>
+        <div class="table-wrap">
+          <table data-filter-table="details">
+            <thead>
+              <tr>
+                <th data-filter-key="asin">ASIN</th>
+                <th data-filter-key="focus">重点关注</th>
+                <th data-filter-key="brand">品牌</th>
+                <th data-filter-key="category">类型</th>
+                <th data-filter-key="style">款式</th>
+                <th data-filter-key="model">型号</th>
+                <th data-filter-key="spec">规格</th>
+                <th data-filter-key="phone_brand">手机品牌</th>
+                <th data-filter-key="rating">评分</th>
+                <th data-filter-key="review_count">评论数</th>
+                <th data-filter-key="monthly_sales_label">近30天销量标签</th>
+                <th data-filter-key="current_price">当前价</th>
+                <th data-filter-key="msrp_price">MSRP</th>
+                <th data-filter-key="discount_percent">折扣</th>
+                <th data-filter-key="promotion_status">促销</th>
+                <th data-filter-key="status">状态</th>
+                <th data-filter-key="memo">备忘</th>
+                <th data-filter-key="scraped_at">抓取时间</th>
+              </tr>
+            </thead>
+            <tbody id="productRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel" id="focusView">
+        <h2>重点关注</h2>
+        <div class="panel-toolbar">
+          <button id="exportFocusExcel" type="button">导出全部重点关注 Excel</button>
+          <span class="toolbar-note" id="focusExportStatus">用于导入外部操作系统的字段化表格</span>
+        </div>
+        <div class="table-wrap">
+          <table data-filter-table="focus">
+            <thead>
+              <tr>
+                <th data-filter-key="asin">ASIN</th>
+                <th data-filter-key="focus">重点关注</th>
+                <th data-filter-key="brand">品牌</th>
+                <th data-filter-key="category">类型</th>
+                <th data-filter-key="style">款式</th>
+                <th data-filter-key="model">型号</th>
+                <th data-filter-key="spec">规格</th>
+                <th data-filter-key="phone_brand">手机品牌</th>
+                <th data-filter-key="rating">评分</th>
+                <th data-filter-key="review_count">评论数</th>
+                <th data-filter-key="monthly_sales_label">近30天销量标签</th>
+                <th data-filter-key="current_price">当前价</th>
+                <th data-filter-key="msrp_price">MSRP</th>
+                <th data-filter-key="discount_percent">折扣</th>
+                <th data-filter-key="promotion_status">促销</th>
+                <th data-filter-key="status">状态</th>
+                <th data-filter-key="memo">备忘</th>
+                <th data-filter-key="scraped_at">抓取时间</th>
+              </tr>
+            </thead>
+            <tbody id="focusRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel" id="competitorView">
+        <h2>竞品跟踪</h2>
+        <div class="table-wrap">
+          <table data-filter-table="competitor">
+            <thead>
+              <tr>
+                <th data-filter-key="image">主图</th>
+                <th data-filter-key="asin">ASIN</th>
+                <th data-filter-key="brand">品牌</th>
+                <th data-filter-key="category">类型</th>
+                <th data-filter-key="style">款式</th>
+                <th data-filter-key="model">型号</th>
+                <th data-filter-key="spec">规格</th>
+                <th data-filter-key="phone_brand">手机品牌</th>
+                <th data-filter-key="rating">评分</th>
+                <th data-filter-key="review_count">评论数</th>
+                <th data-filter-key="monthly_sales_label">近30天销量标签</th>
+                <th data-filter-key="current_price">当前价</th>
+                <th data-filter-key="msrp_price">MSRP</th>
+                <th data-filter-key="discount_percent">折扣</th>
+                <th data-filter-key="promotion_status">促销</th>
+                <th data-filter-key="status">状态</th>
+                <th data-filter-key="scraped_at">抓取时间</th>
+              </tr>
+            </thead>
+            <tbody id="competitorRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel" id="shellOpportunityView">
+        <h2>清水壳机会跟踪</h2>
+        <div class="opportunity-filters">
+          <label>手机品牌<select id="shellBrandFilter"><option value="">全部手机品牌</option></select></label>
+          <label>型号搜索<input id="shellModelSearch" type="search" placeholder="输入型号关键词" /></label>
+          <label>状态筛选
+            <select id="shellStatusFilter">
+              <option value="">全部</option>
+              <option value="single">清水壳-单壳</option>
+              <option value="threeInOne">清水壳-3in1</option>
+              <option value="breakthrough">待突破</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table class="opportunity-table">
+            <thead>
+              <tr>
+                <th>手机品牌</th>
+                <th>型号</th>
+                <th>清水壳-单壳</th>
+                <th>清水壳-3in1</th>
+                <th>待突破</th>
+                <th>对应 ASIN</th>
+                <th>单壳备忘</th>
+                <th>3in1备忘</th>
+              </tr>
+            </thead>
+            <tbody id="shellOpportunityRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view-panel chart-panel" id="chartView">
+        <h2>价格趋势</h2>
+        <div class="chart-controls">
+          <label>ASIN 1<input class="product-asin-input" list="asinOptions" placeholder="例如 B0FJS7782G" autocomplete="off" /></label>
+          <label>ASIN 2<input class="product-asin-input" list="asinOptions" placeholder="可选" autocomplete="off" /></label>
+          <label>ASIN 3<input class="product-asin-input" list="asinOptions" placeholder="可选" autocomplete="off" /></label>
+          <datalist id="asinOptions"></datalist>
+        </div>
+        <canvas id="priceChart"></canvas>
+      </section>
+
+      <section class="view-panel" id="changesView">
+        <h2>本周价格异动统计</h2>
+        <ul class="summary-list" id="weeklyChanges"></ul>
+      </section>
+    </main>
+
+    <div class="column-filter-popover" id="columnFilterPopover" hidden>
+      <p class="column-filter-title" id="columnFilterTitle"></p>
+      <input class="column-filter-search" id="columnFilterSearch" type="search" placeholder="查找筛选项" />
+      <div class="column-filter-options" id="columnFilterOptions"></div>
+      <div class="column-filter-count" id="columnFilterCount"></div>
+      <div class="column-filter-actions">
+        <button id="columnFilterSelectAll" type="button">全选</button>
+        <button id="columnFilterClear" type="button">清空</button>
+        <button id="columnFilterApply" class="primary" type="button">应用</button>
+      </div>
+    </div>
+
+    <script>
+      const MARKET_CONFIG = {
+        UK: { label: "英国", site: "Amazon.co.uk", currency: "GBP", locale: "en-GB", host: "www.amazon.co.uk" },
+        DE: { label: "德国", site: "Amazon.de", currency: "EUR", locale: "de-DE", host: "www.amazon.de" },
+        IT: { label: "意大利", site: "Amazon.it", currency: "EUR", locale: "it-IT", host: "www.amazon.it" },
+        ES: { label: "西班牙", site: "Amazon.es", currency: "EUR", locale: "es-ES", host: "www.amazon.es" },
+      };
+      const requestedMarket = new URLSearchParams(window.location.search).get("market")?.toUpperCase();
+      const MARKET = MARKET_CONFIG[requestedMarket] ? requestedMarket : "UK";
+      const MARKET_META = MARKET_CONFIG[MARKET];
+      const NOTES_KEY = `amazon_eu_price_monitor_notes_${MARKET}_v1`;
+      const FOCUS_KEY = `amazon_eu_price_monitor_focus_${MARKET}_v1`;
+      const SHELL_OPPORTUNITY_KEY = `amazon_eu_price_monitor_shell_opportunity_${MARKET}_v1`;
+      const SOURCE_PRODUCTS_DRAFT_KEY = `amazon_eu_price_monitor_source_products_draft_${MARKET}_v1`;
+      const NON_ACTIVE_NOTES_KEY = `amazon_eu_price_monitor_non_active_notes_${MARKET}_v1`;
+      const SHELL_TYPES = ["清水壳-单壳", "清水壳-3in1"];
+      const SOURCE_FIELDS = ["asin", "url", "brand", "category", "style", "model", "spec", "phone_brand", "sku", "isku", "fnsku", "source_row", "product_status"];
+      const EMPTY_FILTER_VALUE = "（空白）";
+      const state = {
+        latest: [],
+        history: [],
+        competitors: [],
+        sourceProducts: [],
+        originalSourceProducts: [],
+        nonActiveProducts: [],
+        nonActiveNotes: loadNonActiveNotes(),
+        sourceMeta: {},
+        sourceDraftDirty: false,
+        chart: null,
+        notes: loadNotes(),
+        focused: loadFocus(),
+        shellOpportunity: loadShellOpportunity(),
+        metricFilter: null,
+        columnFilters: { details: {}, focus: {}, competitor: {} },
+        tableFilterSources: { details: [], focus: [], competitor: [] },
+        activeColumnFilter: null,
+      };
+      const fmt = new Intl.NumberFormat(MARKET_META.locale, { style: "currency", currency: MARKET_META.currency });
+      const numberFmt = new Intl.NumberFormat(MARKET_META.locale);
+
+      function withCacheBust(url) {
+        const separator = url.includes("?") ? "&" : "?";
+        return `${url}${separator}v=${Date.now()}`;
+      }
+
+      function showStatus(message, isError = false) {
+        const status = document.querySelector("#dataStatus");
+        status.textContent = message;
+        status.classList.toggle("active", Boolean(message));
+        status.style.borderColor = isError ? "#fca5a5" : "#f59e0b";
+        status.style.background = isError ? "#fef2f2" : "#fffbeb";
+        status.style.color = isError ? "#991b1b" : "#92400e";
+      }
+
+      async function apiJson(path, options = {}) {
+        const response = await fetch(withCacheBust(path), {
+          cache: "no-store",
+          ...options,
+          headers: { "content-type": "application/json", ...(options.headers || {}) },
+        });
+        if (!response.ok) throw new Error(`${path} HTTP ${response.status}`);
+        return response.json();
+      }
+
+      async function persistProductState(asin, patch) {
+        return apiJson(`/api/market/${MARKET}/state`, {
+          method: "PUT",
+          body: JSON.stringify({ asin, ...patch }),
+        });
+      }
+
+      async function loadRemoteState() {
+        try {
+          const remote = await apiJson(`/api/market/${MARKET}/state`);
+          state.notes = {};
+          state.focused = new Set();
+          for (const item of remote.products || []) {
+            if (item.memo) state.notes[item.asin] = { text: item.memo, updated_at: item.memo_updated_at };
+            if (item.focused) state.focused.add(item.asin);
+          }
+          state.shellOpportunity = {};
+          for (const item of remote.shell || []) {
+            state.shellOpportunity[shellGroupKey(item.phone_brand, item.model)] = {
+              single: Boolean(item.single_shell),
+              threeInOne: Boolean(item.three_in_one),
+              breakthrough: Boolean(item.breakthrough),
+            };
+          }
+        } catch (error) {
+          console.warn("Remote employee state unavailable; using browser fallback", error);
+        }
+      }
+
+      function todayStamp() {
+        return new Date().toLocaleDateString("sv-SE");
+      }
+
+      function loadNotes() {
+        try {
+          return JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function saveNotes() {
+        localStorage.setItem(NOTES_KEY, JSON.stringify(state.notes));
+      }
+
+      function loadNonActiveNotes() {
+        try {
+          return JSON.parse(localStorage.getItem(NON_ACTIVE_NOTES_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function nonActiveKey(item) {
+        return String(item.sku || item.isku || item.fnsku || item.asin || `row-${item.source_row || ""}`).trim();
+      }
+
+      function saveNonActiveMemo(button) {
+        const key = button.dataset.key;
+        if (!key) return;
+        const cell = button.closest(".memo-cell");
+        const input = cell?.querySelector(".non-active-memo-input");
+        const dateNode = cell?.querySelector(".memo-date");
+        const text = input?.value || "";
+        const date = todayStamp();
+        if (text.trim()) {
+          state.nonActiveNotes[key] = { text, updated_at: date };
+          if (dateNode) dateNode.textContent = `更新：${date}`;
+        } else {
+          delete state.nonActiveNotes[key];
+          if (dateNode) dateNode.textContent = "";
+        }
+        localStorage.setItem(NON_ACTIVE_NOTES_KEY, JSON.stringify(state.nonActiveNotes));
+        button.textContent = "已保存";
+        setTimeout(() => { button.textContent = "保存"; }, 1200);
+      }
+
+      async function saveMemoForButton(button) {
+        const asin = button.dataset.asin;
+        if (!asin) return;
+        const cell = button.closest(".memo-cell, .memo-stack-item");
+        const input = cell?.querySelector(".memo-input");
+        const dateNode = cell?.querySelector(".memo-date");
+        const text = input?.value || "";
+        const date = todayStamp();
+        if (text.trim()) {
+          state.notes[asin] = { text, updated_at: date };
+          if (dateNode) dateNode.textContent = `更新：${date}`;
+        } else {
+          delete state.notes[asin];
+          if (dateNode) dateNode.textContent = "";
+        }
+        saveNotes();
+        try {
+          const saved = await persistProductState(asin, { memo: text });
+          if (saved.memo_updated_at) {
+            state.notes[asin] = { text, updated_at: saved.memo_updated_at };
+            if (dateNode) dateNode.textContent = `更新：${saved.memo_updated_at}`;
+          }
+          button.textContent = "已保存";
+        } catch {
+          button.textContent = "保存失败";
+        }
+        setTimeout(() => {
+          button.textContent = "保存";
+        }, 1200);
+      }
+
+      function loadFocus() {
+        try {
+          return new Set(JSON.parse(localStorage.getItem(FOCUS_KEY) || "[]"));
+        } catch {
+          return new Set();
+        }
+      }
+
+      function saveFocus(asin, focused) {
+        localStorage.setItem(FOCUS_KEY, JSON.stringify([...state.focused]));
+        persistProductState(asin, { focused }).catch((error) => {
+          console.warn("Unable to save focus state", error);
+          showStatus("重点关注保存失败，请刷新后重试。", true);
+        });
+      }
+
+      function loadShellOpportunity() {
+        try {
+          return JSON.parse(localStorage.getItem(SHELL_OPPORTUNITY_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function saveShellOpportunity(key) {
+        localStorage.setItem(SHELL_OPPORTUNITY_KEY, JSON.stringify(state.shellOpportunity));
+        const [phone_brand, model] = key.split("||");
+        const record = state.shellOpportunity[key] || {};
+        apiJson(`/api/market/${MARKET}/shell-state`, {
+          method: "PUT",
+          body: JSON.stringify({
+            phone_brand,
+            model,
+            single_shell: Boolean(record.single),
+            three_in_one: Boolean(record.threeInOne),
+            breakthrough: Boolean(record.breakthrough),
+          }),
+        }).catch((error) => {
+          console.warn("Unable to save shell opportunity state", error);
+          showStatus("清水壳机会状态保存失败，请刷新后重试。", true);
+        });
+      }
+
+      async function loadJson(url, fallback) {
+        try {
+          const res = await fetch(withCacheBust(url), { cache: "no-store" });
+          if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
+          return await res.json();
+        } catch (error) {
+          showStatus(`数据读取失败：${error.message}。请刷新页面，仍失败时检查最近一次抓取任务。`, true);
+          return fallback;
+        }
+      }
+
+      async function loadOptionalJson(url, fallback) {
+        try {
+          const res = await fetch(withCacheBust(url), { cache: "no-store" });
+          if (!res.ok) return fallback;
+          return await res.json();
+        } catch {
+          return fallback;
+        }
+      }
+
+      async function loadSourceProductList() {
+        const source = await loadOptionalJson(`/api/market/${MARKET}/catalog`, { products: [] });
+        const products = Array.isArray(source.products) ? source.products : [];
+        state.nonActiveProducts = Array.isArray(source.non_active_products) ? cloneProducts(source.non_active_products) : [];
+        const draft = loadSourceDraft();
+        state.sourceMeta = { ...source, products: undefined };
+        delete state.sourceMeta.products;
+        delete state.sourceMeta.non_active_products;
+        state.originalSourceProducts = cloneProducts(products);
+        state.sourceProducts = draft || cloneProducts(products);
+        state.sourceDraftDirty = Boolean(draft);
+      }
+
+      function cloneProducts(products) {
+        return products.map((item) => ({ ...item }));
+      }
+
+      function loadSourceDraft() {
+        try {
+          const draft = JSON.parse(localStorage.getItem(SOURCE_PRODUCTS_DRAFT_KEY) || "null");
+          return Array.isArray(draft?.products) ? draft.products : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function saveSourceDraft() {
+        localStorage.setItem(SOURCE_PRODUCTS_DRAFT_KEY, JSON.stringify({
+          saved_at: new Date().toISOString(),
+          products: normalizeSourceProducts(),
+        }));
+        state.sourceDraftDirty = true;
+        renderSourceData();
+      }
+
+      function clearSourceDraft() {
+        localStorage.removeItem(SOURCE_PRODUCTS_DRAFT_KEY);
+        state.sourceProducts = cloneProducts(state.originalSourceProducts);
+        state.sourceDraftDirty = false;
+        renderSourceData();
+      }
+
+      function productListPayload() {
+        return {
+          ...state.sourceMeta,
+          products: normalizeSourceProducts(),
+          non_active_products: state.nonActiveProducts,
+        };
+      }
+
+      function renderNonActiveProducts() {
+        const search = document.querySelector("#nonActiveSearch")?.value.trim().toLowerCase() || "";
+        const rows = state.nonActiveProducts.filter((item) => !search || sourceSearchText(item).includes(search));
+        document.querySelector("#nonActiveStatus").innerHTML = `<span>非在售 SKU：${rows.length} / ${state.nonActiveProducts.length}</span><span>这些记录不会执行 Amazon 抓价</span>`;
+        document.querySelector("#nonActiveRows").innerHTML = rows.length ? rows.map((item) => {
+          const key = nonActiveKey(item);
+          const note = state.nonActiveNotes[key] || {};
+          const asin = String(item.asin || "");
+          const asinCell = asin && item.url
+            ? `<a class="asin-link" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a>`
+            : escapeHtml(asin || "-");
+          return `<tr>
+            <td>${escapeHtml(item.sku || "-")}</td><td>${asinCell}</td><td>${escapeHtml(item.product_status || "-")}</td>
+            <td>${escapeHtml(item.category || item.type || "-")}</td><td>${escapeHtml(item.style || "-")}</td>
+            <td>${escapeHtml(item.model || "-")}</td><td>${escapeHtml(item.spec || "-")}</td>
+            <td>${escapeHtml(item.phone_brand || "-")}</td><td>${escapeHtml(item.isku || "-")}</td>
+            <td>${escapeHtml(item.fnsku || "-")}</td><td>${escapeHtml(item.source_row || "-")}</td>
+            <td class="memo-cell">
+              <textarea class="memo-input non-active-memo-input" placeholder="输入备忘">${escapeHtml(note.text || "")}</textarea>
+              <div class="memo-actions"><button class="memo-save non-active-memo-save" type="button" data-key="${escapeHtml(key)}">保存</button></div>
+              <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
+            </td>
+          </tr>`;
+        }).join("") : `<tr><td class="muted" colspan="12">WPS 同步后，其他产品状态的 SKU 会显示在这里。</td></tr>`;
+      }
+
+      function normalizeSourceProducts() {
+        return state.sourceProducts.map((item) => {
+          const asin = String(item.asin || item.id || "").trim().toUpperCase();
+          const row = { ...item };
+          SOURCE_FIELDS.forEach((field) => {
+            if (field === "asin") {
+              row.asin = asin;
+            } else {
+              row[field] = String(row[field] || "").trim();
+            }
+          });
+          row.id = asin;
+          if (!row.url && asin) row.url = amazonUrlForAsin(asin);
+          row.type = row.category || row.type || "";
+          row.name = row.name || [row.category, row.style, row.model, row.spec].filter(Boolean).join(" ");
+          row.enabled = Boolean(row.enabled);
+          return row;
+        });
+      }
+
+      function amazonUrlForAsin(asin) {
+        return asin ? `https://${MARKET_META.host}/dp/${encodeURIComponent(asin)}` : "";
+      }
+
+      function sourceSearchText(item) {
+        return [
+          item.asin,
+          item.url,
+          item.brand,
+          item.category,
+          item.style,
+          item.model,
+          item.spec,
+          item.phone_brand,
+          item.sku,
+          item.isku,
+          item.fnsku,
+          item.source_row,
+          item.product_status,
+        ].filter(Boolean).join(" ").toLowerCase();
+      }
+
+      function filteredSourceProducts() {
+        const search = document.querySelector("#sourceSearch")?.value.trim().toLowerCase() || "";
+        return state.sourceProducts
+          .map((item, index) => ({ item, index }))
+          .filter(({ item }) => !search || sourceSearchText(item).includes(search));
+      }
+
+      function sourceValidation() {
+        const asins = state.sourceProducts.map((item) => String(item.asin || item.id || "").trim().toUpperCase());
+        const missing = asins.filter((asin) => !asin).length;
+        const seen = new Set();
+        const duplicates = new Set();
+        asins.filter(Boolean).forEach((asin) => {
+          if (seen.has(asin)) duplicates.add(asin);
+          seen.add(asin);
+        });
+        return { missing, duplicates: [...duplicates] };
+      }
+
+      function keyOf(item) {
+        return item.product_id || item.asin || item.product_url || item.product_name;
+      }
+
+      function asinOf(item) {
+        return item.asin || item.product_id || "";
+      }
+
+      function price(value) {
+        if (value === null || value === undefined || value === "") return null;
+        const number = Number(value);
+        return Number.isFinite(number) ? number : null;
+      }
+
+      function ratingText(value) {
+        const rating = price(value);
+        return rating === null ? "-" : numberFmt.format(rating);
+      }
+
+      function reviewCountText(value) {
+        if (value === null || value === undefined || value === "") return "-";
+        const count = Number(value);
+        return Number.isFinite(count) ? numberFmt.format(count) : "-";
+      }
+
+      function columnFilterValue(item, key) {
+        const asin = asinOf(item);
+        const note = state.notes[asin] || {};
+        const current = price(item.current_price);
+        const msrp = price(item.msrp_price);
+        const discount = price(item.discount_percent);
+        const values = {
+          image: item.image_url ? "有主图" : "无主图",
+          asin,
+          focus: state.focused.has(asin) ? "已关注" : "未关注",
+          brand: item.brand,
+          category: item.category,
+          style: item.style,
+          model: item.model,
+          spec: item.spec,
+          phone_brand: item.phone_brand,
+          rating: price(item.rating) === null ? null : ratingText(item.rating),
+          review_count: item.review_count,
+          monthly_sales_label: item.monthly_sales_label,
+          current_price: current === null ? null : fmt.format(current),
+          msrp_price: msrp === null ? null : fmt.format(msrp),
+          discount_percent: discount > 0 ? `${numberFmt.format(discount)}%` : null,
+          promotion_status: item.promotion_status || "无促销",
+          status: item.status,
+          memo: note.text?.trim() ? "有备忘" : "无备忘",
+          scraped_at: item.scraped_at?.slice(0, 10),
+        };
+        const value = values[key];
+        return value === null || value === undefined || value === "" ? EMPTY_FILTER_VALUE : String(value);
+      }
+
+      function applyColumnFilters(rows, tableId) {
+        const filters = state.columnFilters[tableId] || {};
+        return rows.filter((item) => Object.entries(filters).every(([key, selected]) => selected.has(columnFilterValue(item, key))));
+      }
+
+      function initializeColumnFilters() {
+        document.querySelectorAll("table[data-filter-table]").forEach((table) => {
+          table.querySelectorAll("thead th[data-filter-key]").forEach((header) => {
+            if (header.querySelector(".column-filter-button")) return;
+            const label = header.textContent.trim();
+            header.dataset.filterLabel = label;
+            header.innerHTML = `<span class="column-header"><span>${escapeHtml(label)}</span><button class="column-filter-button" type="button" title="筛选 ${escapeHtml(label)}" aria-label="筛选 ${escapeHtml(label)}">▼</button></span>`;
+          });
+        });
+      }
+
+      function openColumnFilter(button) {
+        const table = button.closest("table[data-filter-table]");
+        const header = button.closest("th[data-filter-key]");
+        if (!table || !header) return;
+        const tableId = table.dataset.filterTable;
+        const key = header.dataset.filterKey;
+        const values = [...new Set((state.tableFilterSources[tableId] || []).map((item) => columnFilterValue(item, key)))]
+          .sort((a, b) => a.localeCompare(b, "zh-Hans-CN", { numeric: true }));
+        const current = state.columnFilters[tableId]?.[key];
+        state.activeColumnFilter = {
+          tableId,
+          key,
+          label: header.dataset.filterLabel || key,
+          values,
+          draft: new Set(current ? [...current] : values),
+        };
+        const popover = document.querySelector("#columnFilterPopover");
+        document.querySelector("#columnFilterTitle").textContent = `${state.activeColumnFilter.label}筛选`;
+        document.querySelector("#columnFilterSearch").value = "";
+        renderColumnFilterOptions();
+        popover.hidden = false;
+        popover.style.left = "12px";
+        popover.style.top = "12px";
+        const rect = button.getBoundingClientRect();
+        const left = Math.max(12, Math.min(rect.left, window.innerWidth - popover.offsetWidth - 12));
+        const top = Math.max(12, Math.min(rect.bottom + 6, window.innerHeight - popover.offsetHeight - 12));
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+        document.querySelector("#columnFilterSearch").focus();
+      }
+
+      function renderColumnFilterOptions() {
+        const active = state.activeColumnFilter;
+        if (!active) return;
+        const search = document.querySelector("#columnFilterSearch").value.trim().toLowerCase();
+        const visible = active.values.filter((value) => !search || value.toLowerCase().includes(search));
+        document.querySelector("#columnFilterOptions").innerHTML = visible.length
+          ? visible.map((value) => `<label class="column-filter-option"><input class="column-filter-checkbox" type="checkbox" data-value="${escapeHtml(value)}" ${active.draft.has(value) ? "checked" : ""}><span>${escapeHtml(value)}</span></label>`).join("")
+          : `<span class="muted">没有匹配项</span>`;
+        updateColumnFilterCount();
+      }
+
+      function updateColumnFilterCount() {
+        const active = state.activeColumnFilter;
+        if (!active) return;
+        document.querySelector("#columnFilterCount").textContent = `已选 ${active.draft.size} / ${active.values.length} 项`;
+      }
+
+      function applyActiveColumnFilter() {
+        const active = state.activeColumnFilter;
+        if (!active) return;
+        const filters = state.columnFilters[active.tableId];
+        if (active.draft.size === active.values.length) {
+          delete filters[active.key];
+        } else {
+          filters[active.key] = new Set(active.draft);
+        }
+        closeColumnFilter();
+        render();
+      }
+
+      function closeColumnFilter() {
+        document.querySelector("#columnFilterPopover").hidden = true;
+        state.activeColumnFilter = null;
+      }
+
+      function updateColumnFilterButtons() {
+        document.querySelectorAll("table[data-filter-table]").forEach((table) => {
+          const tableId = table.dataset.filterTable;
+          table.querySelectorAll("th[data-filter-key]").forEach((header) => {
+            const active = Object.prototype.hasOwnProperty.call(state.columnFilters[tableId] || {}, header.dataset.filterKey);
+            header.querySelector(".column-filter-button")?.classList.toggle("active", active);
+          });
+        });
+      }
+
+      function filteredProducts(rows = state.latest) {
+        const brand = document.querySelector("#brandFilter").value;
+        const category = document.querySelector("#categoryFilter").value;
+        const style = document.querySelector("#styleFilter").value;
+        const model = document.querySelector("#modelFilter").value;
+        const search = document.querySelector("#searchQuery").value.trim().toLowerCase();
+        const min = price(document.querySelector("#minPrice").value);
+        const max = price(document.querySelector("#maxPrice").value);
+        return rows.filter((item) => {
+          const current = price(item.current_price);
+          if (brand && item.brand !== brand) return false;
+          if (category && item.category !== category) return false;
+          if (style && item.style !== style) return false;
+          if (model && item.model !== model) return false;
+          if (search && !searchText(item).includes(search)) return false;
+          if (min !== null && (current === null || current < min)) return false;
+          if (max !== null && (current === null || current > max)) return false;
+          return true;
+        });
+      }
+
+      function searchText(item) {
+        const asin = asinOf(item);
+        const note = state.notes[asin] || {};
+        return [
+          asin,
+          item.brand,
+          item.category,
+          item.style,
+          item.model,
+          item.spec,
+          item.phone_brand,
+          item.rating,
+          item.review_count,
+          item.monthly_sales_label,
+          item.status,
+          item.promotion_status,
+          note.text,
+          note.updated_at,
+        ].filter(Boolean).join(" ").toLowerCase();
+      }
+
+      function shellGroupKey(phoneBrand, model) {
+        return `${phoneBrand || "-"}||${model || "-"}`;
+      }
+
+      function shellOpportunityGroups() {
+        const groups = new Map();
+        state.latest.forEach((item) => {
+          const category = item.category || item.type;
+          if (!SHELL_TYPES.includes(category)) return;
+          const phoneBrand = item.phone_brand || "-";
+          const model = item.model || "-";
+          const key = shellGroupKey(phoneBrand, model);
+          if (!groups.has(key)) {
+            groups.set(key, {
+              key,
+              phoneBrand,
+              model,
+              single: [],
+              threeInOne: [],
+            });
+          }
+          const group = groups.get(key);
+          if (category === "清水壳-单壳") group.single.push(item);
+          if (category === "清水壳-3in1") group.threeInOne.push(item);
+        });
+        return [...groups.values()].sort((a, b) => `${a.phoneBrand} ${a.model}`.localeCompare(`${b.phoneBrand} ${b.model}`, "zh-Hans-CN"));
+      }
+
+      function filteredShellOpportunityGroups() {
+        const phoneBrand = document.querySelector("#shellBrandFilter").value;
+        const search = document.querySelector("#shellModelSearch").value.trim().toLowerCase();
+        const status = document.querySelector("#shellStatusFilter").value;
+        return shellOpportunityGroups().filter((group) => {
+          const record = state.shellOpportunity[group.key] || {};
+          if (phoneBrand && group.phoneBrand !== phoneBrand) return false;
+          if (search && !`${group.phoneBrand} ${group.model}`.toLowerCase().includes(search)) return false;
+          if (status && !record[status]) return false;
+          return true;
+        });
+      }
+
+      function fillSelect(selector, values) {
+        const select = document.querySelector(selector);
+        const current = select.value;
+        select.innerHTML = select.firstElementChild.outerHTML;
+        [...new Set(values.filter(Boolean))].sort().forEach((value) => {
+          const opt = document.createElement("option");
+          opt.value = value;
+          opt.textContent = value;
+          select.appendChild(opt);
+        });
+        select.value = current;
+      }
+
+      function renderMetrics(rows) {
+        const prices = rows.map((item) => price(item.current_price)).filter((value) => value !== null);
+        const fresh = rows.filter((item) => item.status === "ok" || item.status === "ok_manual").length;
+        const stale = rows.filter((item) => item.status === "stale_price").length;
+        const promos = rows.filter((item) => item.promotion_status).length;
+        const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+        const filters = [
+          { key: "all", label: "监控商品", value: rows.length },
+          { key: "fresh", label: "本次成功取价", value: fresh },
+          { key: "stale", label: "沿用历史价", value: stale },
+        ];
+        document.querySelector("#metrics").innerHTML = [
+          ...filters.map(({ key, label, value }) => `<button class="metric metric-filter ${state.metricFilter === key ? "active" : ""}" type="button" data-metric-filter="${key}" aria-pressed="${state.metricFilter === key}" title="点击筛选${label}"><span>${label}</span><strong>${value}</strong></button>`),
+          `<div class="metric"><span>平均售价</span><strong>${avg === null ? "-" : fmt.format(avg)}</strong></div>`,
+          `<div class="metric"><span>有促销</span><strong>${promos}</strong></div>`,
+        ].join("");
+      }
+
+      function applyMetricFilter(rows) {
+        if (state.metricFilter === "fresh") {
+          return rows.filter((item) => item.status === "ok" || item.status === "ok_manual");
+        }
+        if (state.metricFilter === "stale") {
+          return rows.filter((item) => item.status === "stale_price");
+        }
+        return rows;
+      }
+
+      function statusBadgeClass(status) {
+        if (String(status || "").startsWith("ok")) return "good";
+        if (status === "stale_price") return "warn";
+        return "bad";
+      }
+
+      function renderTable(rows, selector = "#productRows", options = {}) {
+        const showFocus = options.showFocus !== false;
+        const showImage = Boolean(options.showImage);
+        const showMemo = options.showMemo !== false;
+        const emptyMessage = options.emptyMessage || "暂无数据";
+        document.querySelector(selector).innerHTML = rows.length ? rows.map((item) => {
+          const current = price(item.current_price);
+          const msrp = price(item.msrp_price);
+          const discount = Number(item.discount_percent);
+          const asin = asinOf(item) || "-";
+          const note = state.notes[asin] || {};
+          return `<tr>
+            ${showImage ? `<td>${renderThumb(item)}</td>` : ""}
+            <td><a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
+            ${showFocus ? `<td class="focus-cell"><label class="focus-label"><input class="focus-checkbox" type="checkbox" data-asin="${escapeHtml(asin)}" ${state.focused.has(asin) ? "checked" : ""}>关注</label></td>` : ""}
+            <td>${escapeHtml(item.brand || "-")}</td>
+            <td>${escapeHtml(item.category || "-")}</td>
+            <td>${escapeHtml(item.style || "-")}</td>
+            <td>${escapeHtml(item.model || "-")}</td>
+            <td>${escapeHtml(item.spec || "-")}</td>
+            <td>${escapeHtml(item.phone_brand || "-")}</td>
+            <td>${escapeHtml(ratingText(item.rating))}</td>
+            <td>${escapeHtml(reviewCountText(item.review_count))}</td>
+            <td>${escapeHtml(item.monthly_sales_label || "-")}</td>
+            <td class="price">${current === null ? "-" : fmt.format(current)}${item.price_carried_forward ? `<br><span class="muted">沿用上次有效价</span>` : ""}</td>
+            <td>${msrp === null ? "-" : fmt.format(msrp)}</td>
+            <td>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
+            <td>${item.promotion_status ? `<span class="badge warn">${escapeHtml(item.promotion_status)}</span>` : "-"}</td>
+            <td><span class="badge ${statusBadgeClass(item.status)}">${escapeHtml(item.status || "-")}</span></td>
+            ${showMemo ? `
+            <td class="memo-cell">
+              <textarea class="memo-input" data-asin="${escapeHtml(asin)}" placeholder="输入备忘">${escapeHtml(note.text || "")}</textarea>
+              <div class="memo-actions">
+                <button class="memo-save" type="button" data-asin="${escapeHtml(asin)}">保存</button>
+                <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
+              </div>
+            </td>` : ""}
+            <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
+          </tr>`;
+        }).join("") : `<tr><td class="muted" colspan="${16 + (showImage ? 1 : 0) + (showFocus ? 1 : 0) + (showMemo ? 1 : 0)}">${escapeHtml(emptyMessage)}</td></tr>`;
+      }
+
+      function renderShellOpportunity() {
+        const rows = filteredShellOpportunityGroups();
+        const body = document.querySelector("#shellOpportunityRows");
+        body.innerHTML = rows.length ? rows.map((group) => {
+          const record = state.shellOpportunity[group.key] || {};
+          return `<tr>
+            <td>${escapeHtml(group.phoneBrand)}</td>
+            <td>${escapeHtml(group.model)}</td>
+            <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="single" ${record.single ? "checked" : ""}>单壳</label></td>
+            <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="threeInOne" ${record.threeInOne ? "checked" : ""}>3in1</label></td>
+            <td><label class="opportunity-check"><input class="shell-opportunity-checkbox" type="checkbox" data-key="${escapeHtml(group.key)}" data-field="breakthrough" ${record.breakthrough ? "checked" : ""}>待突破</label></td>
+            <td>${renderShellAsins(group)}</td>
+            <td>${renderShellMemos(group.single)}</td>
+            <td>${renderShellMemos(group.threeInOne)}</td>
+          </tr>`;
+        }).join("") : `<tr><td class="muted" colspan="8">暂无匹配型号</td></tr>`;
+      }
+
+      function renderShellAsins(group) {
+        const single = group.single.map((item) => `<span>单壳：<a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asinOf(item) || "-")}</a></span>`).join("");
+        const threeInOne = group.threeInOne.map((item) => `<span>3in1：<a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asinOf(item) || "-")}</a></span>`).join("");
+        return `<div class="asin-list">${single || ""}${threeInOne || ""}</div>`;
+      }
+
+      function renderShellMemos(products) {
+        if (!products.length) return `<span class="muted">【无上新ASIN】</span>`;
+        return `<div class="memo-stack">${products.map((item) => {
+          const asin = asinOf(item) || "-";
+          const note = state.notes[asin] || {};
+          return `<div class="memo-stack-item">
+            <div class="muted">${escapeHtml(item.category || item.type || "-")} ${escapeHtml(asin)}</div>
+            <textarea class="memo-input" data-asin="${escapeHtml(asin)}" placeholder="同步商品明细备忘">${escapeHtml(note.text || "")}</textarea>
+            <div class="memo-actions">
+              <button class="memo-save" type="button" data-asin="${escapeHtml(asin)}">保存</button>
+              <span class="memo-date">${note.updated_at ? `更新：${escapeHtml(note.updated_at)}` : ""}</span>
+            </div>
+          </div>`;
+        }).join("")}</div>`;
+      }
+
+      function renderThumb(item) {
+        const image = item.image_url || item.main_image_url || item.thumbnail_url;
+        if (!image) return `<span class="thumb-placeholder">无图</span>`;
+        return `<img class="thumb" src="${escapeHtml(image)}" alt="${escapeHtml(asinOf(item) || "竞品主图")}" loading="lazy">`;
+      }
+
+      function renderProductAsinOptions(rows) {
+        const list = document.querySelector("#asinOptions");
+        const asins = [...new Set(rows.map(asinOf).filter(Boolean))].sort();
+        list.innerHTML = asins.map((asin) => `<option value="${escapeHtml(asin)}"></option>`).join("");
+        const inputs = [...document.querySelectorAll(".product-asin-input")];
+        if (!inputs.some((input) => input.value.trim()) && asins[0]) inputs[0].value = asins[0];
+        renderChart();
+      }
+
+      function renderSourceData() {
+        const rows = filteredSourceProducts();
+        const validation = sourceValidation();
+        const status = document.querySelector("#sourceDataStatus");
+        const duplicateText = validation.duplicates.length ? `重复 ASIN：${validation.duplicates.slice(0, 8).join(", ")}${validation.duplicates.length > 8 ? "..." : ""}` : "无重复 ASIN";
+        status.innerHTML = [
+          `<span>原始行数：${state.sourceProducts.length}</span>`,
+          `<span>当前显示：${rows.length}</span>`,
+          `<span>${state.sourceDraftDirty ? "有浏览器草稿" : "未保存浏览器草稿"}</span>`,
+          `<span>${validation.missing ? `缺少 ASIN：${validation.missing} 行` : "ASIN 完整"}</span>`,
+          `<span>${escapeHtml(duplicateText)}</span>`,
+        ].join("");
+        document.querySelector("#sourceDataRows").innerHTML = rows.length ? rows.map(({ item, index }) => renderSourceRow(item, index)).join("") : `<tr><td class="muted" colspan="15">暂无匹配原始数据</td></tr>`;
+      }
+
+      function renderSourceRow(item, index) {
+        return `<tr>
+          ${sourceInputCell(index, "asin", item.asin || item.id || "", "ASIN")}
+          ${sourceInputCell(index, "url", item.url || amazonUrlForAsin(item.asin || item.id || ""), "URL", "source-url")}
+          ${sourceInputCell(index, "brand", item.brand || "Tentoki", "品牌")}
+          ${sourceInputCell(index, "category", item.category || item.type || "", "类型")}
+          ${sourceInputCell(index, "style", item.style || "", "款式")}
+          ${sourceInputCell(index, "model", item.model || "", "型号", "source-model")}
+          ${sourceInputCell(index, "spec", item.spec || "", "规格")}
+          ${sourceInputCell(index, "phone_brand", item.phone_brand || "", "手机品牌")}
+          ${sourceInputCell(index, "sku", item.sku || "", "SKU")}
+          ${sourceInputCell(index, "isku", item.isku || "", "iSKU")}
+          ${sourceInputCell(index, "fnsku", item.fnsku || "", "FNSKU")}
+          ${sourceInputCell(index, "source_row", item.source_row || "", "源表行")}
+          <td>
+            <select class="source-field" data-index="${index}" data-field="product_status" aria-label="产品状态">
+              ${["正常在售", "新品", "停售", "待上架", "下架"].map((status) => `<option value="${escapeHtml(status)}" ${String(item.product_status || "") === status ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}
+              <option value="${escapeHtml(item.product_status || "")}" ${["正常在售", "新品", "停售", "待上架", "下架"].includes(item.product_status || "") ? "" : "selected"}>${escapeHtml(item.product_status || "自定义")}</option>
+            </select>
+          </td>
+          <td><input class="source-field source-enabled" data-index="${index}" data-field="enabled" type="checkbox" ${item.enabled !== false ? "checked" : ""} aria-label="启用爬取"></td>
+          <td><button class="source-row-action source-remove" type="button" data-index="${index}">移除本地行</button></td>
+        </tr>`;
+      }
+
+      function sourceInputCell(index, field, value, label, extraClass = "") {
+        return `<td><input class="source-field ${extraClass}" data-index="${index}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"></td>`;
+      }
+
+      function updateSourceField(input) {
+        const index = Number(input.dataset.index);
+        const field = input.dataset.field;
+        const row = state.sourceProducts[index];
+        if (!row || !field) return;
+        if (field === "enabled") {
+          row.enabled = input.checked;
+        } else {
+          row[field] = input.value;
+          if (field === "asin") {
+            row.asin = input.value.trim().toUpperCase();
+            row.id = row.asin;
+            if (!row.url || row.url.includes("amazon.fr/dp/")) {
+              row.url = amazonUrlForAsin(row.asin);
+              const urlInput = document.querySelector(`.source-field[data-index="${index}"][data-field="url"]`);
+              if (urlInput) urlInput.value = row.url;
+            }
+          }
+          if (field === "category") row.type = input.value;
+        }
+        state.sourceDraftDirty = true;
+        renderSourceDataStatusOnly();
+      }
+
+      function renderSourceDataStatusOnly() {
+        const validation = sourceValidation();
+        const status = document.querySelector("#sourceDataStatus");
+        if (!status) return;
+        const duplicateText = validation.duplicates.length ? `重复 ASIN：${validation.duplicates.slice(0, 8).join(", ")}${validation.duplicates.length > 8 ? "..." : ""}` : "无重复 ASIN";
+        status.innerHTML = [
+          `<span>原始行数：${state.sourceProducts.length}</span>`,
+          `<span>当前显示：${filteredSourceProducts().length}</span>`,
+          `<span>有未保存改动</span>`,
+          `<span>${validation.missing ? `缺少 ASIN：${validation.missing} 行` : "ASIN 完整"}</span>`,
+          `<span>${escapeHtml(duplicateText)}</span>`,
+        ].join("");
+      }
+
+      function addSourceRow() {
+        state.sourceProducts.unshift({
+          id: "",
+          asin: "",
+          url: "",
+          brand: "Tentoki",
+          category: "",
+          type: "",
+          style: "",
+          model: "",
+          spec: "",
+          phone_brand: "",
+          sku: "",
+          isku: "",
+          fnsku: "",
+          source_row: "",
+          product_status: "新品",
+          enabled: true,
+        });
+        state.sourceDraftDirty = true;
+        document.querySelector("#sourceSearch").value = "";
+        renderSourceData();
+        renderNonActiveProducts();
+      }
+
+      function removeSourceRow(index) {
+        if (!window.confirm("只会移除当前浏览器草稿里的这一行，下载 JSON 前不会影响仓库。确认移除？")) return;
+        state.sourceProducts.splice(index, 1);
+        state.sourceDraftDirty = true;
+        renderSourceData();
+      }
+
+      function downloadSourceJson() {
+        const payload = JSON.stringify(productListPayload(), null, 2) + "\n";
+        const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "product_list.json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function focusExportRows() {
+        return state.latest
+          .filter((item) => state.focused.has(asinOf(item)))
+          .sort((a, b) => asinOf(a).localeCompare(asinOf(b)));
+      }
+
+      function renderFocusExportStatus() {
+        const node = document.querySelector("#focusExportStatus");
+        if (!node) return;
+        node.textContent = `当前已标记重点关注：${focusExportRows().length} 个 ASIN`;
+      }
+
+      function downloadFocusExcel() {
+        const rows = focusExportRows();
+        if (!rows.length) {
+          window.alert("当前没有重点关注商品。请先在商品明细里勾选“关注”。");
+          renderFocusExportStatus();
+          return;
+        }
+        const html = focusExcelHtml(rows);
+        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `重点关注_${todayStamp()}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        const node = document.querySelector("#focusExportStatus");
+        if (node) node.textContent = `已导出：${rows.length} 个 ASIN`;
+      }
+
+      function focusExcelHtml(rows) {
+        const headers = [
+          "ASIN",
+          "Amazon URL",
+          "品牌",
+          "类型",
+          "款式",
+          "型号",
+          "规格",
+          "手机品牌",
+          "评分",
+          "评论数",
+          "近30天销量标签",
+          "当前售价 EUR",
+          "MSRP EUR",
+          "折扣比例",
+          "促销状态",
+          "抓取状态",
+          "备忘",
+          "备忘日期",
+          "抓取时间",
+        ];
+        const bodyRows = rows.map((item) => {
+          const asin = asinOf(item);
+          const note = state.notes[asin] || {};
+          return [
+            asin,
+            item.product_url || "",
+            item.brand || "",
+            item.category || "",
+            item.style || "",
+            item.model || "",
+            item.spec || "",
+            item.phone_brand || "",
+            item.rating ?? "",
+            item.review_count ?? "",
+            item.monthly_sales_label || "",
+            price(item.current_price) ?? "",
+            price(item.msrp_price) ?? "",
+            item.discount_percent || "",
+            item.promotion_status || "",
+            item.status || "",
+            note.text || "",
+            note.updated_at || "",
+            item.scraped_at || "",
+          ];
+        });
+        return `<!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                table { border-collapse: collapse; }
+                th, td { border: 1px solid #999; padding: 6px; white-space: nowrap; }
+                th { background: #eef2ff; font-weight: 700; }
+                .text { mso-number-format:"\\@"; }
+              </style>
+            </head>
+            <body>
+              <table>
+                <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+                <tbody>${bodyRows.map((row) => `<tr>${row.map((cell, index) => `<td${index <= 7 || index === 10 || index >= 14 ? ' class="text"' : ""}>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+              </table>
+            </body>
+          </html>`;
+      }
+
+      function renderChart() {
+        if (!window.Chart) {
+          showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
+          return;
+        }
+        const selectedAsins = [...new Set([...document.querySelectorAll(".product-asin-input")]
+          .map((input) => input.value.trim())
+          .filter(Boolean))].slice(0, 3);
+        const series = selectedAsins.map((asin) => {
+          const points = state.history
+            .filter((item) => asinOf(item) === asin && price(item.current_price) !== null)
+            .sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
+          return { asin, points };
+        }).filter((item) => item.points.length);
+        const labels = [...new Set(series.flatMap((item) => item.points.map((point) => point.scraped_at?.slice(0, 10) || "")))]
+          .filter(Boolean)
+          .sort();
+        const colors = ["#2563eb", "#dc2626", "#047857"];
+        const datasets = series.map((item, index) => {
+          const byDate = new Map(item.points.map((point) => [point.scraped_at?.slice(0, 10) || "", price(point.current_price)]));
+          return {
+            label: item.asin,
+            data: labels.map((label) => byDate.has(label) ? byDate.get(label) : null),
+            borderColor: colors[index],
+            backgroundColor: colors[index],
+            tension: 0.25,
+            spanGaps: true,
+          };
+        });
+        if (state.chart) state.chart.destroy();
+        state.chart = new Chart(document.querySelector("#priceChart"), {
+          type: "line",
+          data: {
+            labels,
+            datasets,
+          },
+          options: { responsive: true, scales: { y: { ticks: { callback: (value) => fmt.format(value) } } } },
+        });
+      }
+
+      function renderWeeklyChanges() {
+        const categories = weeklyChangeCategories();
+        document.querySelector("#weeklyChanges").innerHTML = categories
+          .map((category) => renderChangeCategory(category))
+          .join("");
+      }
+
+      function weeklyChangeCategories() {
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const grouped = new Map();
+        state.history.forEach((item) => {
+          const time = Date.parse(item.scraped_at || "");
+          if (!time || time < weekAgo) return;
+          const key = keyOf(item);
+          if (!grouped.has(key)) grouped.set(key, []);
+          grouped.get(key).push(item);
+        });
+        const changes = [];
+        grouped.forEach((rows) => {
+          rows.sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
+          const first = rows[0], last = rows[rows.length - 1];
+          const currentDelta = delta(first.current_price, last.current_price);
+          const msrpDelta = delta(first.msrp_price, last.msrp_price);
+          const newPromo = !first.promotion_status && Boolean(last.promotion_status);
+          if (currentDelta || msrpDelta || newPromo) changes.push({ first, last, currentDelta, msrpDelta, newPromo });
+        });
+        return [
+          { label: "售价降价", rows: changes.filter((c) => c.currentDelta < 0), mode: "current" },
+          { label: "售价涨价", rows: changes.filter((c) => c.currentDelta > 0), mode: "current" },
+          { label: "MSRP 降价", rows: changes.filter((c) => c.msrpDelta < 0), mode: "msrp" },
+          { label: "MSRP 涨价", rows: changes.filter((c) => c.msrpDelta > 0), mode: "msrp" },
+          { label: "新促销", rows: changes.filter((c) => c.newPromo), mode: "promo" },
+        ];
+      }
+
+      function renderChangeCategory(category) {
+        const detail = category.rows.length
+          ? `<div class="change-detail">
+              <table class="change-table">
+                <thead>
+                  <tr>
+                    <th>ASIN</th>
+                    <th>类型</th>
+                    <th>款式</th>
+                    <th>型号</th>
+                    <th>变化前</th>
+                    <th>变化后</th>
+                    <th>时间</th>
+                  </tr>
+                </thead>
+                <tbody>${category.rows.map((row) => renderChangeRow(row, category.mode)).join("")}</tbody>
+              </table>
+            </div>`
+          : `<div class="change-detail muted">暂无商品</div>`;
+        return `<li>
+          <details>
+            <summary><span>${escapeHtml(category.label)}</span><span class="summary-count">${category.rows.length} 个商品</span></summary>
+            ${detail}
+          </details>
+        </li>`;
+      }
+
+      function renderChangeRow(change, mode) {
+        const first = change.first;
+        const last = change.last;
+        const asin = asinOf(last) || "-";
+        const before = mode === "msrp" ? price(first.msrp_price) : price(first.current_price);
+        const after = mode === "msrp" ? price(last.msrp_price) : price(last.current_price);
+        const beforeText = mode === "promo" ? (first.promotion_status || "-") : (before === null ? "-" : fmt.format(before));
+        const afterText = mode === "promo" ? (last.promotion_status || "-") : (after === null ? "-" : fmt.format(after));
+        return `<tr>
+          <td><a class="asin-link" href="${escapeHtml(last.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
+          <td>${escapeHtml(last.category || "-")}</td>
+          <td>${escapeHtml(last.style || "-")}</td>
+          <td>${escapeHtml(last.model || "-")}</td>
+          <td>${escapeHtml(beforeText)}</td>
+          <td>${escapeHtml(afterText)}</td>
+          <td class="muted">${escapeHtml(first.scraped_at?.slice(0, 10) || "-")} → ${escapeHtml(last.scraped_at?.slice(0, 10) || "-")}</td>
+        </tr>`;
+      }
+
+      function delta(a, b) {
+        const first = price(a), last = price(b);
+        if (first === null || last === null) return null;
+        const diff = Number((last - first).toFixed(2));
+        return diff === 0 ? null : diff;
+      }
+
+      function render() {
+        const detailsBaseRows = filteredProducts();
+        const focusBaseRows = detailsBaseRows.filter((item) => state.focused.has(asinOf(item)));
+        const competitorBaseRows = filteredProducts(state.competitors);
+        state.tableFilterSources = {
+          details: detailsBaseRows,
+          focus: focusBaseRows,
+          competitor: competitorBaseRows,
+        };
+        const detailsColumnRows = applyColumnFilters(detailsBaseRows, "details");
+        const rows = applyMetricFilter(detailsColumnRows);
+        const focusRows = applyColumnFilters(focusBaseRows, "focus");
+        const competitorRows = applyColumnFilters(competitorBaseRows, "competitor");
+        renderMetrics(detailsColumnRows);
+        renderTable(rows);
+        renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
+        renderFocusExportStatus();
+        renderTable(competitorRows, "#competitorRows", { showFocus: false, showImage: true, showMemo: false, emptyMessage: "还没有竞品数据。后续导入竞品 ASIN 后会显示在这里。" });
+        renderShellOpportunity();
+        renderSourceData();
+        renderProductAsinOptions(rows);
+        renderWeeklyChanges();
+        updateColumnFilterButtons();
+      }
+
+      function switchView(viewId) {
+        document.querySelectorAll(".view-panel").forEach((panel) => panel.classList.toggle("active", panel.id === viewId));
+        document.querySelectorAll(".tab-button").forEach((button) => {
+          const active = button.dataset.view === viewId;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-selected", String(active));
+        });
+        if (viewId === "chartView") renderChart();
+        if (viewId === "sourceDataView") renderSourceData();
+        if (viewId === "nonActiveView") renderNonActiveProducts();
+        closeColumnFilter();
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+      }
+
+      async function init() {
+        document.title = `${MARKET_META.site} 价格监控看板`;
+        document.querySelector("#marketEyebrow").textContent = `${MARKET_META.site} Price Monitor`;
+        document.querySelector("#marketTitle").textContent = `${MARKET_META.label}站手机配件价格监控`;
+        document.querySelector("#marketSubtitle").textContent = `配送地区和当地语言已固定，价格币种为 ${MARKET_META.currency}。`;
+        document.querySelectorAll(".market-button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.market === MARKET);
+        });
+        document.querySelector("#minPrice").placeholder = MARKET_META.currency;
+        document.querySelector("#maxPrice").placeholder = MARKET_META.currency;
+        initializeColumnFilters();
+        const latest = await loadJson(`/api/market/${MARKET}/latest`, { products: [] });
+        const history = await loadJson(`/api/market/${MARKET}/history`, { products: [] });
+        await loadSourceProductList();
+        await loadRemoteState();
+        state.latest = latest.products || [];
+        state.history = history.products || state.latest;
+        state.competitors = [];
+        if (state.latest.length) {
+          showStatus("");
+        } else {
+          showStatus(`${MARKET_META.label}站还没有抓取数据。首次完整抓取成功后会自动显示。`, true);
+        }
+        fillSelect("#brandFilter", state.latest.map((item) => item.brand));
+        fillSelect("#categoryFilter", state.latest.map((item) => item.category));
+        fillSelect("#styleFilter", state.latest.map((item) => item.style));
+        fillSelect("#modelFilter", state.latest.map((item) => item.model));
+        fillSelect("#shellBrandFilter", shellOpportunityGroups().map((item) => item.phoneBrand));
+        ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#searchQuery", "#minPrice", "#maxPrice"]
+          .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
+        ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
+          .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
+        document.querySelector("#sourceSearch").addEventListener("input", renderSourceData);
+        document.querySelector("#nonActiveSearch").addEventListener("input", renderNonActiveProducts);
+        document.querySelector("#addSourceRow").addEventListener("click", addSourceRow);
+        document.querySelector("#saveSourceDraft").addEventListener("click", saveSourceDraft);
+        document.querySelector("#downloadSourceJson").addEventListener("click", downloadSourceJson);
+        document.querySelector("#resetSourceDraft").addEventListener("click", clearSourceDraft);
+        document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
+        document.querySelector("#columnFilterSearch").addEventListener("input", renderColumnFilterOptions);
+        document.querySelector("#columnFilterSelectAll").addEventListener("click", () => {
+          if (!state.activeColumnFilter) return;
+          state.activeColumnFilter.draft = new Set(state.activeColumnFilter.values);
+          renderColumnFilterOptions();
+        });
+        document.querySelector("#columnFilterClear").addEventListener("click", () => {
+          if (!state.activeColumnFilter) return;
+          state.activeColumnFilter.draft.clear();
+          renderColumnFilterOptions();
+        });
+        document.querySelector("#columnFilterApply").addEventListener("click", applyActiveColumnFilter);
+        document.querySelectorAll(".tab-button").forEach((button) => {
+          button.addEventListener("click", () => switchView(button.dataset.view));
+        });
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("focus-checkbox")) return;
+          const asin = event.target.dataset.asin;
+          if (!asin) return;
+          if (event.target.checked) {
+            state.focused.add(asin);
+          } else {
+            state.focused.delete(asin);
+          }
+          saveFocus(asin, event.target.checked);
+          render();
+        });
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("shell-opportunity-checkbox")) return;
+          const key = event.target.dataset.key;
+          const field = event.target.dataset.field;
+          if (!key || !field) return;
+          if (!state.shellOpportunity[key]) state.shellOpportunity[key] = {};
+          state.shellOpportunity[key][field] = event.target.checked;
+          saveShellOpportunity(key);
+          renderShellOpportunity();
+        });
+        document.addEventListener("click", (event) => {
+          const metricButton = event.target.closest?.(".metric-filter");
+          if (metricButton) {
+            const filter = metricButton.dataset.metricFilter;
+            state.metricFilter = state.metricFilter === filter ? null : filter;
+            switchView("detailsView");
+            render();
+            return;
+          }
+          const filterButton = event.target.closest?.(".column-filter-button");
+          if (filterButton) {
+            openColumnFilter(filterButton);
+            return;
+          }
+          if (!event.target.closest?.("#columnFilterPopover")) closeColumnFilter();
+        });
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("column-filter-checkbox") || !state.activeColumnFilter) return;
+          const value = event.target.dataset.value;
+          if (event.target.checked) {
+            state.activeColumnFilter.draft.add(value);
+          } else {
+            state.activeColumnFilter.draft.delete(value);
+          }
+          updateColumnFilterCount();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeColumnFilter();
+        });
+        document.addEventListener("click", (event) => {
+          if (event.target.classList.contains("non-active-memo-save")) {
+            saveNonActiveMemo(event.target);
+            return;
+          }
+          if (!event.target.classList.contains("memo-save")) return;
+          saveMemoForButton(event.target);
+        });
+        document.addEventListener("input", (event) => {
+          if (!event.target.classList.contains("source-field")) return;
+          updateSourceField(event.target);
+        });
+        document.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("source-field")) return;
+          updateSourceField(event.target);
+        });
+        document.addEventListener("click", (event) => {
+          if (!event.target.classList.contains("source-remove")) return;
+          removeSourceRow(Number(event.target.dataset.index));
+        });
+        document.querySelectorAll(".product-asin-input").forEach((input) => {
+          input.addEventListener("input", renderChart);
+          input.addEventListener("change", renderChart);
+        });
+        render();
+      }
+
+      init();
+    </script>
+  </body>
+</html>

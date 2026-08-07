@@ -315,6 +315,8 @@ async def extract_dom_prices(page: "Page") -> dict[str, Any]:
     return {
         "current_price": normalize_price(current),
         "msrp_price": normalize_price(msrp),
+        "current_raw": current,
+        "msrp_raw": msrp,
         "price_source": "dom_fallback" if current else None,
         "msrp_source": "dom_fallback" if msrp else None,
     }

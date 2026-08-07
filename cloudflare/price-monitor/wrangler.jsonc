@@ -1,0 +1,33 @@
+{
+  "$schema": "../../logistics_monitor/node_modules/wrangler/config-schema.json",
+  "name": "amazon-eu-price-monitor",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-05-22",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "price.tentoki.online",
+      "custom_domain": true
+    },
+    {
+      "pattern": "price-ingest.tentoki.online",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "amazon-eu-price-monitor",
+      "database_id": "c627fe04-3a86-4bc7-a306-734477e67054",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
