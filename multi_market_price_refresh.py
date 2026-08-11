@@ -143,6 +143,8 @@ async def continue_shopping_if_prompted(page: "Page") -> bool:
         "Continuar comprando",
     )
     body_text = (await safe_text(page, "body") or "").lower()
+    if len(body_text) > 2_000 or await page.locator("#productTitle").count():
+        return False
     if not any(prompt.lower() in body_text for prompt in prompts):
         return False
     for prompt in prompts:
@@ -160,6 +162,15 @@ async def continue_shopping_if_prompted(page: "Page") -> bool:
             except Exception:
                 continue
     return False
+
+
+async def navigate_product_page(page: "Page", url: str) -> None:
+    for _ in range(3):
+        await page.goto(url, wait_until="domcontentloaded", timeout=45_000)
+        await page.wait_for_timeout(1200)
+        if not await continue_shopping_if_prompted(page):
+            return
+    raise RuntimeError("continue shopping interstitial persisted")
 
 
 async def open_location_modal(page: "Page") -> bool:
@@ -350,9 +361,8 @@ async def scrape_product(
 
     location_confirmed_via_api = False
     try:
-        await page.goto(with_market_language(url, market), wait_until="domcontentloaded", timeout=45_000)
-        await page.wait_for_timeout(1200)
-        await continue_shopping_if_prompted(page)
+        target_url = with_market_language(url, market)
+        await navigate_product_page(page, target_url)
         observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
         if not location_matches_postcode(observer_location, postcode, market):
             location_set = await set_delivery_postcode_via_ajax(page, postcode, market)
@@ -361,11 +371,7 @@ async def scrape_product(
                 modal_location = await set_delivery_postcode(page, postcode, market, url)
                 location_set = location_matches_postcode(modal_location, postcode, market)
             if location_set:
-                await page.goto(
-                    with_market_language(url, market), wait_until="domcontentloaded", timeout=45_000
-                )
-                await page.wait_for_timeout(1200)
-                await continue_shopping_if_prompted(page)
+                await navigate_product_page(page, target_url)
     except Exception as exc:
         status = "timeout" if exc.__class__.__name__ == "TimeoutError" else f"navigation_error: {exc}"
         return build_error_record(product, url, status, market, postcode)
