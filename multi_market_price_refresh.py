@@ -135,6 +135,33 @@ async def dismiss_delivery_overlay(page: "Page") -> None:
             continue
 
 
+async def continue_shopping_if_prompted(page: "Page") -> bool:
+    prompts = (
+        "Continue shopping",
+        "Weiter einkaufen",
+        "Continua gli acquisti",
+        "Continuar comprando",
+    )
+    body_text = (await safe_text(page, "body") or "").lower()
+    if not any(prompt.lower() in body_text for prompt in prompts):
+        return False
+    for prompt in prompts:
+        for role in ("button", "link"):
+            try:
+                locator = page.get_by_role(role, name=prompt, exact=False).first
+                if await locator.count():
+                    await locator.click(timeout=4000)
+                    try:
+                        await page.wait_for_load_state("domcontentloaded", timeout=10_000)
+                    except Exception:
+                        pass
+                    await page.wait_for_timeout(1000)
+                    return True
+            except Exception:
+                continue
+    return False
+
+
 async def open_location_modal(page: "Page") -> bool:
     await dismiss_delivery_overlay(page)
     for selector in (
@@ -160,6 +187,7 @@ async def set_delivery_postcode(
     target_url = with_market_language(start_url or f"{market['base_url']}/", market)
     await page.goto(target_url, wait_until="domcontentloaded", timeout=45_000)
     await page.wait_for_timeout(1800)
+    await continue_shopping_if_prompted(page)
     await dismiss_cookie_banner(page)
     await dismiss_delivery_overlay(page)
     current = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
@@ -169,6 +197,7 @@ async def set_delivery_postcode(
     if await set_delivery_postcode_via_ajax(page, postcode, market):
         await page.goto(target_url, wait_until="domcontentloaded", timeout=45_000)
         await page.wait_for_timeout(1200)
+        await continue_shopping_if_prompted(page)
         current = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
         if location_matches_postcode(current, postcode, market):
             return current or ""
@@ -179,6 +208,7 @@ async def set_delivery_postcode(
             fallback_url = with_market_language(f"{market['base_url']}/", market)
             await page.goto(fallback_url, wait_until="domcontentloaded", timeout=45_000)
             await page.wait_for_timeout(1800)
+            await continue_shopping_if_prompted(page)
             await dismiss_cookie_banner(page)
             opened = await open_location_modal(page)
         if not opened:
@@ -220,6 +250,7 @@ async def set_delivery_postcode(
                 continue
         await page.goto(target_url, wait_until="domcontentloaded", timeout=45_000)
         await page.wait_for_timeout(1000)
+        await continue_shopping_if_prompted(page)
     except Exception as exc:
         print(f"Unable to set {market['site']} postcode {postcode}: {exc}", file=sys.stderr)
     return await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link") or ""
@@ -321,6 +352,7 @@ async def scrape_product(
     try:
         await page.goto(with_market_language(url, market), wait_until="domcontentloaded", timeout=45_000)
         await page.wait_for_timeout(1200)
+        await continue_shopping_if_prompted(page)
         observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
         if not location_matches_postcode(observer_location, postcode, market):
             location_set = await set_delivery_postcode_via_ajax(page, postcode, market)
@@ -333,6 +365,7 @@ async def scrape_product(
                     with_market_language(url, market), wait_until="domcontentloaded", timeout=45_000
                 )
                 await page.wait_for_timeout(1200)
+                await continue_shopping_if_prompted(page)
     except Exception as exc:
         status = "timeout" if exc.__class__.__name__ == "TimeoutError" else f"navigation_error: {exc}"
         return build_error_record(product, url, status, market, postcode)
