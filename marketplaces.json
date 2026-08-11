@@ -68,6 +68,7 @@
     "city": "Barcelona",
     "cooldown_every": 75,
     "cooldown_seconds": 120,
+    "price_wait_ms": 4000,
     "locale_cookie_name": "lc-acbes",
     "locale_cookie": "es_ES",
     "clearance_words": ["clearance", "liquidación", "liquidacion", "últimas unidades"],

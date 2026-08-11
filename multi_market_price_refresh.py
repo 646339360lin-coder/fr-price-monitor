@@ -385,6 +385,17 @@ async def scrape_product(
         )
         return record
 
+    price_wait_ms = int(market.get("price_wait_ms") or 0)
+    if price_wait_ms:
+        try:
+            await page.locator(
+                "#corePrice_feature_div .a-price .a-offscreen, "
+                "#apex_desktop .a-price .a-offscreen, "
+                ".priceToPay .a-offscreen"
+            ).first.wait_for(state="attached", timeout=price_wait_ms)
+        except Exception:
+            pass
+
     html = await page.content()
     title = await safe_text(page, "#productTitle")
     structured = await extract_structured_product(page)
