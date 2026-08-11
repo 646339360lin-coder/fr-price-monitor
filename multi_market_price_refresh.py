@@ -120,6 +120,37 @@ async def add_market_cookies(context: "BrowserContext", market: dict[str, Any]) 
     await context.add_cookies(cookies)
 
 
+async def dismiss_delivery_overlay(page: "Page") -> None:
+    for selector in (
+        "input[data-action-type='DISMISS']",
+        ".glow-toaster-button-dismiss input",
+    ):
+        try:
+            locator = page.locator(selector).first
+            if await locator.count():
+                await locator.click(timeout=2500)
+                await page.wait_for_timeout(500)
+                return
+        except Exception:
+            continue
+
+
+async def open_location_modal(page: "Page") -> bool:
+    await dismiss_delivery_overlay(page)
+    for selector in (
+        "#nav-global-location-popover-link",
+        "#nav-global-location-data-modal-action",
+    ):
+        try:
+            locator = page.locator(selector).first
+            if await locator.count():
+                await locator.click(timeout=4000)
+                return True
+        except Exception:
+            continue
+    return False
+
+
 async def set_delivery_postcode(
     page: "Page",
     postcode: str,
@@ -130,6 +161,7 @@ async def set_delivery_postcode(
     await page.goto(target_url, wait_until="domcontentloaded", timeout=45_000)
     await page.wait_for_timeout(1800)
     await dismiss_cookie_banner(page)
+    await dismiss_delivery_overlay(page)
     current = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
     if location_matches_postcode(current, postcode, market):
         return current or ""
@@ -142,21 +174,19 @@ async def set_delivery_postcode(
             return current or ""
 
     try:
-        opened = False
-        for selector in (
-            "#nav-global-location-popover-link",
-            "#nav-global-location-data-modal-action",
-        ):
-            try:
-                locator = page.locator(selector).first
-                if await locator.count():
-                    await locator.click(timeout=4000)
-                    opened = True
-                    break
-            except Exception:
-                continue
+        opened = await open_location_modal(page)
         if not opened:
-            raise RuntimeError("location modal trigger not found")
+            fallback_url = with_market_language(f"{market['base_url']}/", market)
+            await page.goto(fallback_url, wait_until="domcontentloaded", timeout=45_000)
+            await page.wait_for_timeout(1800)
+            await dismiss_cookie_banner(page)
+            opened = await open_location_modal(page)
+        if not opened:
+            page_title = (await page.title()).strip()
+            body_text = (await safe_text(page, "body") or "").replace("\n", " ")[:180]
+            raise RuntimeError(
+                f"location modal trigger not found; title={page_title!r}; body={body_text!r}"
+            )
         await page.wait_for_timeout(900)
         postcode_input = page.locator("#GLUXZipUpdateInput, #GLUXZipUpdateInput_0").first
         await postcode_input.fill(postcode, timeout=8000)
