@@ -8,14 +8,43 @@ const MARKETS = {
   ES: { label: "西班牙", site: "Amazon.es", currency: "EUR" },
 };
 
-function json(data, status = 200) {
+function json(data, status = 200, cacheControl = "no-store") {
   return Response.json(data, {
     status,
     headers: {
-      "cache-control": "no-store",
+      "cache-control": cacheControl,
       "x-content-type-options": "nosniff",
     },
   });
+}
+
+function readSession(env) {
+  return typeof env.DB.withSession === "function"
+    ? env.DB.withSession("first-unconstrained")
+    : env.DB;
+}
+
+function withCacheControl(response, value, cacheStatus) {
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", value);
+  if (cacheStatus) headers.set("x-price-monitor-cache", cacheStatus);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function cachedEmployeeResponse(request, env, ctx, ttlSeconds, producer) {
+  requireEmployee(request, env);
+  const cache = caches.default;
+  const cacheKey = new Request(request.url, { method: "GET" });
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    return withCacheControl(cached, `private, max-age=${ttlSeconds}`, "HIT");
+  }
+
+  const response = await producer();
+  if (!response.ok) return response;
+  const edgeResponse = withCacheControl(response.clone(), `public, max-age=${ttlSeconds}`);
+  ctx.waitUntil(cache.put(cacheKey, edgeResponse));
+  return withCacheControl(response, `private, max-age=${ttlSeconds}`, "MISS");
 }
 
 function marketCode(value) {
@@ -175,8 +204,8 @@ async function seedHistory(request, env, url) {
 }
 
 async function marketList(request, env) {
-  requireEmployee(request, env);
-  const result = await env.DB.prepare(
+  const db = readSession(env);
+  const result = await db.prepare(
     `SELECT market, generated_at, total_count, success_count, stale_count
      FROM market_runs WHERE account_key = ?`
   ).bind(ACCOUNT_KEY).all();
@@ -191,12 +220,12 @@ async function marketList(request, env) {
 }
 
 async function latestPrices(request, env, market) {
-  requireEmployee(request, env);
-  const result = await env.DB.prepare(
+  const db = readSession(env);
+  const result = await db.prepare(
     `SELECT record_json FROM latest_prices
      WHERE account_key = ? AND market = ? ORDER BY asin`
   ).bind(ACCOUNT_KEY, market).all();
-  const run = await env.DB.prepare(
+  const run = await db.prepare(
     `SELECT generated_at FROM market_runs WHERE account_key = ? AND market = ?`
   ).bind(ACCOUNT_KEY, market).first();
   return json({
@@ -209,23 +238,27 @@ async function latestPrices(request, env, market) {
 }
 
 async function priceHistory(request, env, market, url) {
-  requireEmployee(request, env);
   const requestedAsins = String(url.searchParams.get("asins") || "")
     .split(",")
     .map((asin) => asin.trim().toUpperCase())
     .filter(Boolean)
-    .slice(0, 3);
+    .slice(0, 5);
+  const weekly = url.searchParams.get("scope") === "weekly";
+  if (!requestedAsins.length && !weekly) {
+    return json({ error: "Provide up to 5 ASINs or use scope=weekly" }, 400);
+  }
+  const historyDays = weekly ? 7 : 180;
   let query =
     `SELECT record_json FROM price_history
      WHERE account_key = ? AND market = ?
-       AND scraped_at >= strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-180 days')`;
-  const bindings = [ACCOUNT_KEY, market];
+       AND scraped_at >= strftime('%Y-%m-%dT%H:%M:%SZ', 'now', ?)`;
+  const bindings = [ACCOUNT_KEY, market, `-${historyDays} days`];
   if (requestedAsins.length) {
     query += ` AND asin IN (${requestedAsins.map(() => "?").join(",")})`;
     bindings.push(...requestedAsins);
   }
   query += " ORDER BY scraped_at, asin";
-  const result = await env.DB.prepare(query).bind(...bindings).all();
+  const result = await readSession(env).prepare(query).bind(...bindings).all();
   return json({
     generated_at: new Date().toISOString(),
     market,
@@ -235,11 +268,12 @@ async function priceHistory(request, env, market, url) {
   });
 }
 
-async function catalog(request, env, market) {
-  requireEmployee(request, env);
-  const result = await env.DB.prepare(
+async function catalog(request, env, market, url) {
+  const inactiveOnly = url.searchParams.get("scope") === "inactive";
+  const activeClause = inactiveOnly ? " AND active = 0" : "";
+  const result = await readSession(env).prepare(
     `SELECT active, metadata_json FROM products
-     WHERE account_key = ? AND market = ? ORDER BY active DESC, asin`
+     WHERE account_key = ? AND market = ?${activeClause} ORDER BY active DESC, asin`
   ).bind(ACCOUNT_KEY, market).all();
   const products = [];
   const nonActiveProducts = [];
@@ -332,20 +366,28 @@ async function putShellState(request, env, market) {
   return json({ ok: true });
 }
 
-async function handleApi(request, env, url) {
+async function handleApi(request, env, url, ctx) {
   if (url.pathname === "/api/ingest" && request.method === "POST") return ingest(request, env);
   if (url.pathname === "/api/ingest/seed" && request.method === "GET") {
     return seedHistory(request, env, url);
   }
-  if (url.pathname === "/api/markets" && request.method === "GET") return marketList(request, env);
+  if (url.pathname === "/api/markets" && request.method === "GET") {
+    return cachedEmployeeResponse(request, env, ctx, 60, () => marketList(request, env));
+  }
 
   const match = url.pathname.match(/^\/api\/market\/(UK|DE|IT|ES)\/(latest|history|catalog|state|shell-state)$/i);
   if (!match) return json({ error: "Not found" }, 404);
   const market = marketCode(match[1]);
   const resource = match[2].toLowerCase();
-  if (resource === "latest" && request.method === "GET") return latestPrices(request, env, market);
-  if (resource === "history" && request.method === "GET") return priceHistory(request, env, market, url);
-  if (resource === "catalog" && request.method === "GET") return catalog(request, env, market);
+  if (resource === "latest" && request.method === "GET") {
+    return cachedEmployeeResponse(request, env, ctx, 60, () => latestPrices(request, env, market));
+  }
+  if (resource === "history" && request.method === "GET") {
+    return cachedEmployeeResponse(request, env, ctx, 120, () => priceHistory(request, env, market, url));
+  }
+  if (resource === "catalog" && request.method === "GET") {
+    return cachedEmployeeResponse(request, env, ctx, 300, () => catalog(request, env, market, url));
+  }
   if (resource === "state" && request.method === "GET") return getUserState(request, env, market);
   if (resource === "state" && request.method === "PUT") return putUserState(request, env, market);
   if (resource === "shell-state" && request.method === "PUT") return putShellState(request, env, market);
@@ -353,17 +395,17 @@ async function handleApi(request, env, url) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
       if (url.hostname === INGEST_HOST) {
         const isIngestPath = url.pathname === "/api/ingest" || url.pathname === "/api/ingest/seed";
-        return isIngestPath ? await handleApi(request, env, url) : json({ error: "Not found" }, 404);
+        return isIngestPath ? await handleApi(request, env, url, ctx) : json({ error: "Not found" }, 404);
       }
       if (url.hostname !== DASHBOARD_HOST && !["localhost", "127.0.0.1"].includes(url.hostname)) {
         return json({ error: "Not found" }, 404);
       }
-      if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url);
+      if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url, ctx);
       return env.ASSETS.fetch(request);
     } catch (error) {
       if (error instanceof Response) return error;

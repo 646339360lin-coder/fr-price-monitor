@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Amazon 欧洲站价格监控看板</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%232563eb'/%3E%3Cpath d='M16 42V22h8l8 11 8-11h8v20h-7V32L32 44 23 32v10z' fill='white'/%3E%3C/svg%3E" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
       :root {
         color-scheme: light;
@@ -355,9 +354,15 @@
       const SHELL_TYPES = ["清水壳-单壳", "清水壳-3in1"];
       const SOURCE_FIELDS = ["asin", "url", "brand", "category", "style", "model", "spec", "phone_brand", "sku", "isku", "fnsku", "source_row", "product_status"];
       const EMPTY_FILTER_VALUE = "（空白）";
+      let chartLibraryPromise = null;
       const state = {
         latest: [],
         history: [],
+        weeklyHistory: [],
+        weeklyHistoryLoaded: false,
+        weeklyHistoryLoading: false,
+        trendHistoryLoaded: new Set(),
+        trendHistoryLoading: new Set(),
         competitors: [],
         sourceProducts: [],
         originalSourceProducts: [],
@@ -558,28 +563,32 @@
 
       async function loadJson(url, fallback) {
         try {
-          const res = await fetch(withCacheBust(url), { cache: "no-store" });
-          if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
-          return await res.json();
+          return await fetchJson(url);
         } catch (error) {
           showStatus(`数据读取失败：${error.message}。请刷新页面，仍失败时检查最近一次抓取任务。`, true);
           return fallback;
         }
       }
 
+      async function fetchJson(url) {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
+        return res.json();
+      }
+
       async function loadOptionalJson(url, fallback) {
         try {
-          const res = await fetch(withCacheBust(url), { cache: "no-store" });
-          if (!res.ok) return fallback;
-          return await res.json();
+          return await fetchJson(url);
         } catch {
           return fallback;
         }
       }
 
-      async function loadSourceProductList() {
-        const source = await loadOptionalJson(`/api/market/${MARKET}/catalog`, { products: [] });
-        const products = Array.isArray(source.products) ? source.products : [];
+      function loadSourceProductList(latestProducts, source) {
+        const products = cloneProducts(latestProducts).map((item) => ({
+          ...item,
+          url: item.url || item.product_url || "",
+        }));
         state.nonActiveProducts = Array.isArray(source.non_active_products) ? cloneProducts(source.non_active_products) : [];
         const draft = loadSourceDraft();
         state.sourceMeta = { ...source, products: undefined };
@@ -1099,7 +1108,57 @@
           status.textContent = `匹配 ${candidates.length} 个 ASIN，请手动勾选最多 5 个后展示。当前已选 ${state.trendSelected.size} 个。`;
           options.innerHTML = candidates.map((asin) => `<label class="trend-option"><input class="trend-checkbox" type="checkbox" data-asin="${escapeHtml(asin)}" ${state.trendSelected.has(asin) ? "checked" : ""}>${escapeHtml(asin)}</label>`).join("");
         }
-        renderChart();
+        if (document.querySelector("#chartView")?.classList.contains("active")) {
+          void loadTrendHistory();
+        }
+      }
+
+      async function loadTrendHistory() {
+        const selectedAsins = [...state.trendSelected].slice(0, 5);
+        const missing = selectedAsins.filter((asin) =>
+          !state.trendHistoryLoaded.has(asin) && !state.trendHistoryLoading.has(asin)
+        );
+        if (!missing.length) {
+          renderChart();
+          return;
+        }
+
+        missing.forEach((asin) => state.trendHistoryLoading.add(asin));
+        const status = document.querySelector("#trendStatus");
+        if (status) status.textContent += ` 正在加载 ${missing.length} 个 ASIN 的历史价格...`;
+        try {
+          const history = await fetchJson(`/api/market/${MARKET}/history?asins=${encodeURIComponent(missing.join(","))}`);
+          const missingSet = new Set(missing);
+          state.history = state.history
+            .filter((item) => !missingSet.has(asinOf(item)))
+            .concat(history.products || []);
+          missing.forEach((asin) => state.trendHistoryLoaded.add(asin));
+        } catch (error) {
+          showStatus(`价格趋势读取失败：${error.message}。请稍后重试。`, true);
+        } finally {
+          missing.forEach((asin) => state.trendHistoryLoading.delete(asin));
+        }
+        renderTrendSelector(state.trendCandidates.map((asin) => ({ asin })));
+      }
+
+      async function loadWeeklyHistory() {
+        if (state.weeklyHistoryLoaded || state.weeklyHistoryLoading) {
+          renderWeeklyChanges();
+          return;
+        }
+        state.weeklyHistoryLoading = true;
+        document.querySelector("#weeklyChanges").innerHTML = '<li class="muted">正在加载最近 7 天价格异动...</li>';
+        try {
+          const history = await fetchJson(`/api/market/${MARKET}/history?scope=weekly`);
+          state.weeklyHistory = history.products || [];
+          state.weeklyHistoryLoaded = true;
+          renderWeeklyChanges();
+        } catch (error) {
+          document.querySelector("#weeklyChanges").innerHTML = '<li class="muted">价格异动读取失败，请稍后重试。</li>';
+          showStatus(`本周价格异动读取失败：${error.message}。`, true);
+        } finally {
+          state.weeklyHistoryLoading = false;
+        }
       }
 
       function renderSourceData() {
@@ -1329,12 +1388,21 @@
           </html>`;
       }
 
-      function renderChart() {
+      function ensureChartLibrary() {
+        if (window.Chart) return Promise.resolve();
+        if (chartLibraryPromise) return chartLibraryPromise;
+        chartLibraryPromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Chart.js load failed"));
+          document.head.appendChild(script);
+        });
+        return chartLibraryPromise;
+      }
+
+      async function renderChart() {
         const canvas = document.querySelector("#priceChart");
-        if (!window.Chart) {
-          showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
-          return;
-        }
         const selectedAsins = [...state.trendSelected].slice(0, 5);
         if (!selectedAsins.length) {
           if (state.chart) {
@@ -1343,6 +1411,15 @@
           }
           canvas.hidden = true;
           return;
+        }
+        if (!window.Chart) {
+          try {
+            await ensureChartLibrary();
+          } catch {
+            chartLibraryPromise = null;
+            showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
+            return;
+          }
         }
         const series = selectedAsins.map((asin) => {
           const points = state.history
@@ -1387,7 +1464,7 @@
       function weeklyChangeCategories() {
         const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const grouped = new Map();
-        state.history.forEach((item) => {
+        state.weeklyHistory.forEach((item) => {
           const time = Date.parse(item.scraped_at || "");
           if (!time || time < weekAgo) return;
           const key = keyOf(item);
@@ -1497,7 +1574,8 @@
           button.classList.toggle("active", active);
           button.setAttribute("aria-selected", String(active));
         });
-        if (viewId === "chartView") renderChart();
+        if (viewId === "chartView") void loadTrendHistory();
+        if (viewId === "changesView") void loadWeeklyHistory();
         if (viewId === "nonActiveView") renderNonActiveProducts();
         closeColumnFilter();
       }
@@ -1517,12 +1595,13 @@
         document.querySelector("#minPrice").placeholder = MARKET_META.currency;
         document.querySelector("#maxPrice").placeholder = MARKET_META.currency;
         initializeColumnFilters();
-        const latest = await loadJson(`/api/market/${MARKET}/latest`, { products: [] });
-        const history = await loadJson(`/api/market/${MARKET}/history`, { products: [] });
-        await loadSourceProductList();
-        await loadRemoteState();
+        const [latest, source] = await Promise.all([
+          loadJson(`/api/market/${MARKET}/latest`, { products: [] }),
+          loadOptionalJson(`/api/market/${MARKET}/catalog?scope=inactive`, { non_active_products: [] }),
+          loadRemoteState(),
+        ]);
         state.latest = latest.products || [];
-        state.history = history.products || state.latest;
+        loadSourceProductList(state.latest, source);
         state.competitors = [];
         if (state.latest.length) {
           showStatus("");
