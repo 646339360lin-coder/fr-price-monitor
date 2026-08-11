@@ -101,7 +101,10 @@
       .summary-count { color: var(--muted); font-size: 20px; font-weight: 600; }
       .change-detail { padding: 0 16px 16px; overflow: auto; }
       .change-table { min-width: 860px; }
-      .chart-controls { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+      .chart-controls { display: grid; gap: 10px; margin-bottom: 14px; }
+      .trend-status { color: var(--muted); font-size: 14px; }
+      .trend-options { display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow: auto; }
+      .trend-option { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 13px; }
       .chart-panel { min-height: 420px; }
       .source-toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) repeat(4, auto); gap: 10px; align-items: end; margin-bottom: 12px; }
       .source-toolbar button, .source-row-action { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: #f8fafc; color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -142,7 +145,6 @@
       <section class="data-status" id="dataStatus"></section>
 
       <section class="filters">
-        <label>品牌<select id="brandFilter"><option value="">全部品牌</option></select></label>
         <label>类型<select id="categoryFilter"><option value="">全部类型</option></select></label>
         <label>款式<select id="styleFilter"><option value="">全部款式</option></select></label>
         <label>重点型号<select id="modelFilter"><option value="">全部型号</option></select></label>
@@ -155,7 +157,6 @@
 
       <section class="view-tabs" aria-label="看板页面切换">
         <button class="tab-button active" type="button" data-view="detailsView" aria-selected="true">商品明细</button>
-        <button class="tab-button" type="button" data-view="sourceDataView" aria-selected="false">原始数据登记表</button>
         <button class="tab-button" type="button" data-view="nonActiveView" aria-selected="false">非在售产品</button>
         <button class="tab-button" type="button" data-view="focusView" aria-selected="false">重点关注</button>
         <button class="tab-button" type="button" data-view="competitorView" aria-selected="false">竞品跟踪</button>
@@ -183,42 +184,6 @@
         </div>
       </section>
 
-      <section class="view-panel" id="sourceDataView">
-        <h2>原始数据登记表</h2>
-        <div class="source-toolbar">
-          <label>查找原始数据<input id="sourceSearch" type="search" placeholder="ASIN / 型号 / 款式 / SKU / 状态" /></label>
-          <button id="addSourceRow" class="primary" type="button">新增 ASIN 行</button>
-          <button id="saveSourceDraft" type="button">保存到浏览器</button>
-          <button id="downloadSourceJson" type="button">下载 product_list.json</button>
-          <button id="resetSourceDraft" type="button">还原原始数据</button>
-        </div>
-        <div class="source-meta" id="sourceDataStatus"></div>
-        <div class="table-wrap">
-          <table class="source-table">
-            <thead>
-              <tr>
-                <th>ASIN</th>
-                <th>URL</th>
-                <th>品牌</th>
-                <th>类型</th>
-                <th>款式</th>
-                <th>型号</th>
-                <th>规格</th>
-                <th>手机品牌</th>
-                <th>SKU</th>
-                <th>iSKU</th>
-                <th>FNSKU</th>
-                <th>源表行</th>
-                <th>产品状态</th>
-                <th>启用爬取</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="sourceDataRows"></tbody>
-          </table>
-        </div>
-      </section>
-
       <section class="view-panel active" id="detailsView">
         <h2>商品明细</h2>
         <div class="table-wrap">
@@ -227,7 +192,6 @@
               <tr>
                 <th data-filter-key="asin">ASIN</th>
                 <th data-filter-key="focus">重点关注</th>
-                <th data-filter-key="brand">品牌</th>
                 <th data-filter-key="category">类型</th>
                 <th data-filter-key="style">款式</th>
                 <th data-filter-key="model">型号</th>
@@ -253,7 +217,7 @@
       <section class="view-panel" id="focusView">
         <h2>重点关注</h2>
         <div class="panel-toolbar">
-          <button id="exportFocusExcel" type="button">导出全部重点关注 Excel</button>
+          <button id="exportFocusExcel" type="button">导出当前筛选重点关注 Excel</button>
           <span class="toolbar-note" id="focusExportStatus">用于导入外部操作系统的字段化表格</span>
         </div>
         <div class="table-wrap">
@@ -262,7 +226,6 @@
               <tr>
                 <th data-filter-key="asin">ASIN</th>
                 <th data-filter-key="focus">重点关注</th>
-                <th data-filter-key="brand">品牌</th>
                 <th data-filter-key="category">类型</th>
                 <th data-filter-key="style">款式</th>
                 <th data-filter-key="model">型号</th>
@@ -293,7 +256,6 @@
               <tr>
                 <th data-filter-key="image">主图</th>
                 <th data-filter-key="asin">ASIN</th>
-                <th data-filter-key="brand">品牌</th>
                 <th data-filter-key="category">类型</th>
                 <th data-filter-key="style">款式</th>
                 <th data-filter-key="model">型号</th>
@@ -351,12 +313,10 @@
       <section class="view-panel chart-panel" id="chartView">
         <h2>价格趋势</h2>
         <div class="chart-controls">
-          <label>ASIN 1<input class="product-asin-input" list="asinOptions" placeholder="例如 B0FJS7782G" autocomplete="off" /></label>
-          <label>ASIN 2<input class="product-asin-input" list="asinOptions" placeholder="可选" autocomplete="off" /></label>
-          <label>ASIN 3<input class="product-asin-input" list="asinOptions" placeholder="可选" autocomplete="off" /></label>
-          <datalist id="asinOptions"></datalist>
+          <div class="trend-status" id="trendStatus"></div>
+          <div class="trend-options" id="trendOptions"></div>
         </div>
-        <canvas id="priceChart"></canvas>
+        <canvas id="priceChart" hidden></canvas>
       </section>
 
       <section class="view-panel" id="changesView">
@@ -413,6 +373,10 @@
         columnFilters: { details: {}, focus: {}, competitor: {} },
         tableFilterSources: { details: [], focus: [], competitor: [] },
         activeColumnFilter: null,
+        visibleFocusRows: [],
+        trendCandidates: [],
+        trendSelected: new Set(),
+        trendCandidateSignature: "",
       };
       const fmt = new Intl.NumberFormat(MARKET_META.locale, { style: "currency", currency: MARKET_META.currency });
       const numberFmt = new Intl.NumberFormat(MARKET_META.locale);
@@ -899,7 +863,6 @@
       }
 
       function filteredProducts(rows = state.latest) {
-        const brand = document.querySelector("#brandFilter").value;
         const category = document.querySelector("#categoryFilter").value;
         const style = document.querySelector("#styleFilter").value;
         const model = document.querySelector("#modelFilter").value;
@@ -908,7 +871,6 @@
         const max = price(document.querySelector("#maxPrice").value);
         return rows.filter((item) => {
           const current = price(item.current_price);
-          if (brand && item.brand !== brand) return false;
           if (category && item.category !== category) return false;
           if (style && item.style !== style) return false;
           if (model && item.model !== model) return false;
@@ -1043,7 +1005,6 @@
             ${showImage ? `<td>${renderThumb(item)}</td>` : ""}
             <td><a class="asin-link" href="${escapeHtml(item.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
             ${showFocus ? `<td class="focus-cell"><label class="focus-label"><input class="focus-checkbox" type="checkbox" data-asin="${escapeHtml(asin)}" ${state.focused.has(asin) ? "checked" : ""}>关注</label></td>` : ""}
-            <td>${escapeHtml(item.brand || "-")}</td>
             <td>${escapeHtml(item.category || "-")}</td>
             <td>${escapeHtml(item.style || "-")}</td>
             <td>${escapeHtml(item.model || "-")}</td>
@@ -1067,7 +1028,7 @@
             </td>` : ""}
             <td class="muted">${escapeHtml(item.scraped_at || "-")}</td>
           </tr>`;
-        }).join("") : `<tr><td class="muted" colspan="${16 + (showImage ? 1 : 0) + (showFocus ? 1 : 0) + (showMemo ? 1 : 0)}">${escapeHtml(emptyMessage)}</td></tr>`;
+        }).join("") : `<tr><td class="muted" colspan="${15 + (showImage ? 1 : 0) + (showFocus ? 1 : 0) + (showMemo ? 1 : 0)}">${escapeHtml(emptyMessage)}</td></tr>`;
       }
 
       function renderShellOpportunity() {
@@ -1116,12 +1077,28 @@
         return `<img class="thumb" src="${escapeHtml(image)}" alt="${escapeHtml(asinOf(item) || "竞品主图")}" loading="lazy">`;
       }
 
-      function renderProductAsinOptions(rows) {
-        const list = document.querySelector("#asinOptions");
-        const asins = [...new Set(rows.map(asinOf).filter(Boolean))].sort();
-        list.innerHTML = asins.map((asin) => `<option value="${escapeHtml(asin)}"></option>`).join("");
-        const inputs = [...document.querySelectorAll(".product-asin-input")];
-        if (!inputs.some((input) => input.value.trim()) && asins[0]) inputs[0].value = asins[0];
+      function renderTrendSelector(rows) {
+        const candidates = [...new Set(rows.map(asinOf).filter(Boolean))].sort();
+        const signature = candidates.join("|");
+        if (signature !== state.trendCandidateSignature) {
+          state.trendCandidateSignature = signature;
+          state.trendSelected = candidates.length > 0 && candidates.length <= 5
+            ? new Set(candidates)
+            : new Set();
+        }
+        state.trendCandidates = candidates;
+        const status = document.querySelector("#trendStatus");
+        const options = document.querySelector("#trendOptions");
+        if (!candidates.length) {
+          status.textContent = "当前搜索和筛选条件下没有匹配的 ASIN。";
+          options.innerHTML = "";
+        } else if (candidates.length <= 5) {
+          status.textContent = `匹配 ${candidates.length} 个 ASIN，已自动展示全部价格趋势。`;
+          options.innerHTML = candidates.map((asin) => `<span class="trend-option">${escapeHtml(asin)}</span>`).join("");
+        } else {
+          status.textContent = `匹配 ${candidates.length} 个 ASIN，请手动勾选最多 5 个后展示。当前已选 ${state.trendSelected.size} 个。`;
+          options.innerHTML = candidates.map((asin) => `<label class="trend-option"><input class="trend-checkbox" type="checkbox" data-asin="${escapeHtml(asin)}" ${state.trendSelected.has(asin) ? "checked" : ""}>${escapeHtml(asin)}</label>`).join("");
+        }
         renderChart();
       }
 
@@ -1253,15 +1230,15 @@
       }
 
       function focusExportRows() {
-        return state.latest
-          .filter((item) => state.focused.has(asinOf(item)))
+        return state.visibleFocusRows
+          .slice()
           .sort((a, b) => asinOf(a).localeCompare(asinOf(b)));
       }
 
       function renderFocusExportStatus() {
         const node = document.querySelector("#focusExportStatus");
         if (!node) return;
-        node.textContent = `当前已标记重点关注：${focusExportRows().length} 个 ASIN`;
+        node.textContent = `当前筛选重点关注：${focusExportRows().length} 个 ASIN`;
       }
 
       function downloadFocusExcel() {
@@ -1353,13 +1330,20 @@
       }
 
       function renderChart() {
+        const canvas = document.querySelector("#priceChart");
         if (!window.Chart) {
           showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
           return;
         }
-        const selectedAsins = [...new Set([...document.querySelectorAll(".product-asin-input")]
-          .map((input) => input.value.trim())
-          .filter(Boolean))].slice(0, 3);
+        const selectedAsins = [...state.trendSelected].slice(0, 5);
+        if (!selectedAsins.length) {
+          if (state.chart) {
+            state.chart.destroy();
+            state.chart = null;
+          }
+          canvas.hidden = true;
+          return;
+        }
         const series = selectedAsins.map((asin) => {
           const points = state.history
             .filter((item) => asinOf(item) === asin && price(item.current_price) !== null)
@@ -1369,7 +1353,7 @@
         const labels = [...new Set(series.flatMap((item) => item.points.map((point) => point.scraped_at?.slice(0, 10) || "")))]
           .filter(Boolean)
           .sort();
-        const colors = ["#2563eb", "#dc2626", "#047857"];
+        const colors = ["#2563eb", "#dc2626", "#047857", "#7c3aed", "#d97706"];
         const datasets = series.map((item, index) => {
           const byDate = new Map(item.points.map((point) => [point.scraped_at?.slice(0, 10) || "", price(point.current_price)]));
           return {
@@ -1382,7 +1366,8 @@
           };
         });
         if (state.chart) state.chart.destroy();
-        state.chart = new Chart(document.querySelector("#priceChart"), {
+        canvas.hidden = false;
+        state.chart = new Chart(canvas, {
           type: "line",
           data: {
             labels,
@@ -1495,12 +1480,12 @@
         const competitorRows = applyColumnFilters(competitorBaseRows, "competitor");
         renderMetrics(detailsColumnRows);
         renderTable(rows);
+        state.visibleFocusRows = focusRows;
         renderTable(focusRows, "#focusRows", { emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
         renderFocusExportStatus();
         renderTable(competitorRows, "#competitorRows", { showFocus: false, showImage: true, showMemo: false, emptyMessage: "还没有竞品数据。后续导入竞品 ASIN 后会显示在这里。" });
         renderShellOpportunity();
-        renderSourceData();
-        renderProductAsinOptions(rows);
+        renderTrendSelector(rows);
         renderWeeklyChanges();
         updateColumnFilterButtons();
       }
@@ -1513,7 +1498,6 @@
           button.setAttribute("aria-selected", String(active));
         });
         if (viewId === "chartView") renderChart();
-        if (viewId === "sourceDataView") renderSourceData();
         if (viewId === "nonActiveView") renderNonActiveProducts();
         closeColumnFilter();
       }
@@ -1545,21 +1529,15 @@
         } else {
           showStatus(`${MARKET_META.label}站还没有抓取数据。首次完整抓取成功后会自动显示。`, true);
         }
-        fillSelect("#brandFilter", state.latest.map((item) => item.brand));
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
         fillSelect("#styleFilter", state.latest.map((item) => item.style));
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
         fillSelect("#shellBrandFilter", shellOpportunityGroups().map((item) => item.phoneBrand));
-        ["#brandFilter", "#categoryFilter", "#styleFilter", "#modelFilter", "#searchQuery", "#minPrice", "#maxPrice"]
+        ["#categoryFilter", "#styleFilter", "#modelFilter", "#searchQuery", "#minPrice", "#maxPrice"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", render));
         ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
-        document.querySelector("#sourceSearch").addEventListener("input", renderSourceData);
         document.querySelector("#nonActiveSearch").addEventListener("input", renderNonActiveProducts);
-        document.querySelector("#addSourceRow").addEventListener("click", addSourceRow);
-        document.querySelector("#saveSourceDraft").addEventListener("click", saveSourceDraft);
-        document.querySelector("#downloadSourceJson").addEventListener("click", downloadSourceJson);
-        document.querySelector("#resetSourceDraft").addEventListener("click", clearSourceDraft);
         document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
         document.querySelector("#columnFilterSearch").addEventListener("input", renderColumnFilterOptions);
         document.querySelector("#columnFilterSelectAll").addEventListener("click", () => {
@@ -1577,6 +1555,19 @@
           button.addEventListener("click", () => switchView(button.dataset.view));
         });
         document.addEventListener("change", (event) => {
+          if (event.target.classList.contains("trend-checkbox")) {
+            const asin = event.target.dataset.asin;
+            if (!asin) return;
+            if (event.target.checked && state.trendSelected.size >= 5) {
+              event.target.checked = false;
+              document.querySelector("#trendStatus").textContent = `最多只能选择 5 个 ASIN。当前匹配 ${state.trendCandidates.length} 个，已选 5 个。`;
+              return;
+            }
+            if (event.target.checked) state.trendSelected.add(asin);
+            else state.trendSelected.delete(asin);
+            renderTrendSelector(state.trendCandidates.map((candidate) => ({ asin: candidate })));
+            return;
+          }
           if (!event.target.classList.contains("focus-checkbox")) return;
           const asin = event.target.dataset.asin;
           if (!asin) return;
@@ -1646,10 +1637,6 @@
         document.addEventListener("click", (event) => {
           if (!event.target.classList.contains("source-remove")) return;
           removeSourceRow(Number(event.target.dataset.index));
-        });
-        document.querySelectorAll(".product-asin-input").forEach((input) => {
-          input.addEventListener("input", renderChart);
-          input.addEventListener("change", renderChart);
         });
         render();
       }
