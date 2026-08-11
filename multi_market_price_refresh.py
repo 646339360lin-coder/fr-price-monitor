@@ -533,6 +533,14 @@ async def run(args: argparse.Namespace) -> int:
                 )
                 print(f"{market['site']} delivery location: {location or 'not captured'}")
             for index, product in enumerate(products, start=1):
+                cooldown_every = int(market.get("cooldown_every") or 0)
+                if cooldown_every and index > 1 and (index - 1) % cooldown_every == 0:
+                    cooldown_seconds = float(market.get("cooldown_seconds") or 90)
+                    print(
+                        f"{market['code']} cooling down for {cooldown_seconds:g}s "
+                        f"after {index - 1} products"
+                    )
+                    await asyncio.sleep(cooldown_seconds)
                 url = normalize_product_url(product, market)
                 print(f"[{index}/{len(products)}] {market['code']} {product.get('brand')} {url}")
                 try:
@@ -585,6 +593,9 @@ async def run(args: argparse.Namespace) -> int:
                         )
                         print(f"{market['site']} retry location: {location or 'not captured'}")
                     for index, product in enumerate(retry_products, start=1):
+                        cooldown_every = int(market.get("cooldown_every") or 0)
+                        if cooldown_every and index > 1 and (index - 1) % cooldown_every == 0:
+                            await asyncio.sleep(float(market.get("cooldown_seconds") or 90))
                         url = normalize_product_url(product, market)
                         try:
                             retry_record = await scrape_product(
@@ -617,6 +628,8 @@ async def run(args: argparse.Namespace) -> int:
         f"{market['code']} wrote {len(latest['products'])} records to {latest_path}; "
         f"ok={ok_count}"
     )
+    if aborted_for_location and not args.allow_empty:
+        return 2
     return 0 if ok_count or args.allow_empty or args.dry_run else 2
 
 

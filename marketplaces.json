@@ -11,6 +11,8 @@
     "postcode": "WC1E 7HU",
     "country_code": "GB",
     "city": "London",
+    "cooldown_every": 75,
+    "cooldown_seconds": 120,
     "locale_cookie_name": "lc-acbuk",
     "locale_cookie": "en_GB",
     "clearance_words": ["clearance", "liquidation", "final reduction"],
