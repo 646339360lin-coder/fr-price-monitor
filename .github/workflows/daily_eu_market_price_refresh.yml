@@ -111,3 +111,11 @@ jobs:
             --market "${{ matrix.market }}" \
             --latest ".runtime/$market_lower/price_results_latest.json" \
             --catalog product_list.json
+
+      - name: Refresh competitor pages and screenshots
+        if: ${{ !cancelled() }}
+        env:
+          PRICE_MONITOR_URL: https://price-ingest.tentoki.online
+          PRICE_MONITOR_INGEST_TOKEN: ${{ secrets.PRICE_MONITOR_INGEST_TOKEN }}
+          PYTHONUNBUFFERED: "1"
+        run: python competitor_market_refresh.py --market "${{ matrix.market }}"

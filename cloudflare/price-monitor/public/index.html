@@ -97,6 +97,16 @@
       .focus-checkbox { width: auto; }
       .thumb { width: 54px; height: 54px; object-fit: contain; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
       .thumb-placeholder { width: 54px; height: 54px; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 6px; color: var(--muted); font-size: 12px; }
+      .promotion-list { display: grid; gap: 5px; min-width: 150px; }
+      .promotion-list .badge { width: fit-content; white-space: normal; }
+      .competitor-entry { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 14px; }
+      .competitor-entry button, .competitor-manage { width: auto; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; background: #eff6ff; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; }
+      .competitor-entry-status { grid-column: 1 / -1; min-height: 18px; color: var(--muted); font-size: 13px; }
+      .screenshot-thumb-wrap { position: relative; display: inline-grid; gap: 5px; }
+      .screenshot-thumb { width: 96px; height: 64px; object-fit: cover; object-position: top; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+      .screenshot-preview { display: none; position: fixed; z-index: 40; left: 50%; top: 50%; width: min(920px, 78vw); height: min(720px, 78vh); transform: translate(-50%, -50%); object-fit: contain; object-position: top; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 22px 60px rgba(15, 23, 42, .28); pointer-events: none; }
+      .screenshot-thumb-wrap:hover .screenshot-preview { display: block; }
+      .screenshot-links { display: flex; gap: 8px; font-size: 12px; white-space: nowrap; }
       .memo-cell { min-width: 220px; }
       .memo-input { width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: inherit; color: var(--text); background: white; }
       .memo-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
@@ -122,11 +132,6 @@
       .summary-count { color: var(--muted); font-size: 20px; font-weight: 600; }
       .change-detail { padding: 0 16px 16px; overflow: auto; }
       .change-table { min-width: 860px; }
-      .chart-controls { display: grid; gap: 10px; margin-bottom: 14px; }
-      .trend-status { color: var(--muted); font-size: 14px; }
-      .trend-options { display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow: auto; }
-      .trend-option { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 13px; }
-      .chart-panel { min-height: 420px; }
       .source-toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) repeat(4, auto); gap: 10px; align-items: end; margin-bottom: 12px; }
       .source-toolbar button, .source-row-action { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: #f8fafc; color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
       .source-toolbar button.primary { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
@@ -140,10 +145,9 @@
       .panel-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
       .panel-toolbar button { border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; background: #eff6ff; color: var(--accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
       .panel-toolbar .toolbar-note { color: var(--muted); font-size: 13px; }
-      canvas { max-height: 320px; }
       a { color: var(--accent); text-decoration: none; }
       @media (max-width: 980px) {
-        .filters, .metrics, .chart-controls { grid-template-columns: 1fr; }
+        .filters, .metrics, .competitor-entry { grid-template-columns: 1fr; }
         .filter-actions { align-items: stretch; }
         table { min-width: 1180px; }
         main, header { padding-left: 14px; padding-right: 14px; }
@@ -184,7 +188,6 @@
         <button class="tab-button" type="button" data-view="focusView" aria-selected="false">重点关注</button>
         <button class="tab-button" type="button" data-view="competitorView" aria-selected="false">竞品跟踪</button>
         <button class="tab-button" type="button" data-view="shellOpportunityView" aria-selected="false">清水壳机会跟踪</button>
-        <button class="tab-button" type="button" data-view="chartView" aria-selected="false">价格趋势</button>
         <button class="tab-button" type="button" data-view="changesView" aria-selected="false">本周价格异动统计</button>
       </section>
 
@@ -273,11 +276,17 @@
 
       <section class="view-panel" id="competitorView">
         <h2>竞品跟踪</h2>
+        <form class="competitor-entry" id="competitorEntryForm">
+          <label>对标类型<select id="competitorBenchmarkType" required><option value="">请选择自己的产品类型</option></select></label>
+          <label>竞品 ASIN<input id="competitorAsin" type="text" maxlength="10" pattern="[A-Za-z0-9]{10}" placeholder="例如 B0XXXXXXXX" required /></label>
+          <button type="submit">添加竞品</button>
+          <div class="competitor-entry-status" id="competitorEntryStatus">添加后将在当前站点下一次定时任务中抓取并保存页面截图。</div>
+        </form>
         <div class="table-wrap">
           <table data-filter-table="competitor">
             <thead>
               <tr>
-                <th data-filter-key="image">主图</th>
+                <th data-filter-key="image">页面截图</th>
                 <th data-filter-key="asin">ASIN</th>
                 <th data-filter-key="category">类型</th>
                 <th data-filter-key="style">款式</th>
@@ -293,6 +302,7 @@
                 <th data-filter-key="promotion_status">促销</th>
                 <th data-filter-key="status">状态</th>
                 <th data-filter-key="scraped_at">抓取时间</th>
+                <th>管理</th>
               </tr>
             </thead>
             <tbody id="competitorRows"></tbody>
@@ -331,15 +341,6 @@
             <tbody id="shellOpportunityRows"></tbody>
           </table>
         </div>
-      </section>
-
-      <section class="view-panel chart-panel" id="chartView">
-        <h2>价格趋势</h2>
-        <div class="chart-controls">
-          <div class="trend-status" id="trendStatus"></div>
-          <div class="trend-options" id="trendOptions"></div>
-        </div>
-        <canvas id="priceChart" hidden></canvas>
       </section>
 
       <section class="view-panel" id="changesView">
@@ -409,15 +410,11 @@
       const SHELL_TYPES = ["清水壳-单壳", "清水壳-3in1"];
       const SOURCE_FIELDS = ["asin", "url", "brand", "category", "style", "model", "spec", "phone_brand", "sku", "isku", "fnsku", "source_row", "product_status"];
       const EMPTY_FILTER_VALUE = "（空白）";
-      let chartLibraryPromise = null;
       const state = {
         latest: [],
-        history: [],
         weeklyHistory: [],
         weeklyHistoryLoaded: false,
         weeklyHistoryLoading: false,
-        trendHistoryLoaded: new Set(),
-        trendHistoryLoading: new Set(),
         competitors: [],
         sourceProducts: [],
         originalSourceProducts: [],
@@ -425,7 +422,6 @@
         nonActiveNotes: loadNonActiveNotes(),
         sourceMeta: {},
         sourceDraftDirty: false,
-        chart: null,
         notes: loadNotes(),
         focused: loadFocus(),
         shellOpportunity: loadShellOpportunity(),
@@ -437,9 +433,6 @@
         tableFilterSources: { details: [], focus: [], competitor: [] },
         activeColumnFilter: null,
         visibleFocusRows: [],
-        trendCandidates: [],
-        trendSelected: new Set(),
-        trendCandidateSignature: "",
       };
       const fmt = new Intl.NumberFormat(MARKET_META.locale, { style: "currency", currency: MARKET_META.currency });
       const numberFmt = new Intl.NumberFormat(MARKET_META.locale);
@@ -467,6 +460,49 @@
         });
         if (!response.ok) throw new Error(`${path} HTTP ${response.status}`);
         return response.json();
+      }
+
+      async function loadCompetitors() {
+        const payload = await apiJson(`/api/market/${MARKET}/competitors`);
+        state.competitors = payload.products || [];
+      }
+
+      async function addCompetitor(event) {
+        event.preventDefault();
+        const status = document.querySelector("#competitorEntryStatus");
+        const asinInput = document.querySelector("#competitorAsin");
+        const benchmarkType = document.querySelector("#competitorBenchmarkType").value;
+        const asin = asinInput.value.trim().toUpperCase();
+        status.textContent = "正在保存...";
+        try {
+          await apiJson(`/api/market/${MARKET}/competitors`, {
+            method: "POST",
+            body: JSON.stringify({ asin, benchmark_type: benchmarkType }),
+          });
+          asinInput.value = "";
+          await loadCompetitors();
+          status.textContent = `${asin} 已加入。下一次定时任务会抓取页面并生成截图。`;
+          render();
+        } catch (error) {
+          status.textContent = `保存失败：${error.message}`;
+        }
+      }
+
+      async function toggleCompetitor(button) {
+        const asin = button.dataset.asin;
+        const active = button.dataset.active !== "1";
+        button.disabled = true;
+        try {
+          await apiJson(`/api/market/${MARKET}/competitors/${asin}`, {
+            method: "PATCH",
+            body: JSON.stringify({ active }),
+          });
+          await loadCompetitors();
+          render();
+        } catch (error) {
+          showStatus(`竞品跟踪状态保存失败：${error.message}`, true);
+          button.disabled = false;
+        }
       }
 
       async function persistProductState(asin, patch) {
@@ -814,7 +850,7 @@
         const msrp = price(item.msrp_price);
         const discount = price(item.discount_percent);
         const values = {
-          image: item.image_url ? "有主图" : "无主图",
+          image: item.screenshot_url ? "有截图" : (item.image_url ? "有主图" : "无图"),
           asin,
           focus: state.focused.has(asin) ? "已关注" : "未关注",
           brand: item.brand,
@@ -1236,6 +1272,17 @@
         return "bad";
       }
 
+      function promotionLines(value) {
+        return String(value || "").split(/\r?\n|[|；;]+/).map((line) => line.trim()).filter(Boolean);
+      }
+
+      function renderPromotions(value) {
+        const lines = promotionLines(value);
+        return lines.length
+          ? `<div class="promotion-list">${lines.map((line) => `<span class="badge warn">${escapeHtml(line)}</span>`).join("")}</div>`
+          : "-";
+      }
+
       function markedCellAttributes(tableId, item, key) {
         const color = state.columnColors[tableId]?.[key]?.[columnFilterValue(item, key)];
         return color ? ` class="cell-marked" style="--cell-mark-color:${color}"` : "";
@@ -1251,6 +1298,7 @@
         const showFocus = options.showFocus !== false;
         const showImage = Boolean(options.showImage);
         const showMemo = options.showMemo !== false;
+        const showManage = Boolean(options.showManage);
         const emptyMessage = options.emptyMessage || "暂无数据";
         document.querySelector(selector).innerHTML = rows.length ? rows.map((item) => {
           const current = price(item.current_price);
@@ -1273,7 +1321,7 @@
             <td class="price${markedCellStyle(tableId, item, "current_price") ? " cell-marked" : ""}"${markedCellStyle(tableId, item, "current_price")}>${current === null ? "-" : fmt.format(current)}${item.price_carried_forward ? `<br><span class="muted">沿用上次有效价</span>` : ""}</td>
             <td${markedCellAttributes(tableId, item, "msrp_price")}>${msrp === null ? "-" : fmt.format(msrp)}</td>
             <td${markedCellAttributes(tableId, item, "discount_percent")}>${discount > 0 ? `<span class="badge good">${discount.toFixed(0)}%</span>` : "-"}</td>
-            <td${markedCellAttributes(tableId, item, "promotion_status")}>${item.promotion_status ? `<span class="badge warn">${escapeHtml(item.promotion_status)}</span>` : "-"}</td>
+            <td${markedCellAttributes(tableId, item, "promotion_status")}>${renderPromotions(item.promotion_status)}</td>
             <td${markedCellAttributes(tableId, item, "status")}><span class="badge ${statusBadgeClass(item.status)}">${escapeHtml(item.status || "-")}</span></td>
             ${showMemo ? `
             <td class="memo-cell${markedCellStyle(tableId, item, "memo") ? " cell-marked" : ""}"${markedCellStyle(tableId, item, "memo")}>
@@ -1284,8 +1332,9 @@
               </div>
             </td>` : ""}
             <td class="muted${markedCellStyle(tableId, item, "scraped_at") ? " cell-marked" : ""}"${markedCellStyle(tableId, item, "scraped_at")}>${escapeHtml(item.scraped_at || "-")}</td>
+            ${showManage ? `<td><button class="competitor-manage" type="button" data-asin="${escapeHtml(asin)}" data-active="${item.active ? "1" : "0"}">${item.active ? "暂停跟踪" : "恢复跟踪"}</button></td>` : ""}
           </tr>`;
-        }).join("") : `<tr><td class="muted" colspan="${15 + (showImage ? 1 : 0) + (showFocus ? 1 : 0) + (showMemo ? 1 : 0)}">${escapeHtml(emptyMessage)}</td></tr>`;
+        }).join("") : `<tr><td class="muted" colspan="${15 + (showImage ? 1 : 0) + (showFocus ? 1 : 0) + (showMemo ? 1 : 0) + (showManage ? 1 : 0)}">${escapeHtml(emptyMessage)}</td></tr>`;
       }
 
       function renderShellOpportunity() {
@@ -1329,64 +1378,16 @@
       }
 
       function renderThumb(item) {
+        if (item.screenshot_url) {
+          return `<span class="screenshot-thumb-wrap">
+            <a href="${escapeHtml(item.screenshot_url)}" target="_blank" rel="noreferrer"><img class="screenshot-thumb" src="${escapeHtml(item.screenshot_url)}" alt="${escapeHtml(asinOf(item) || "竞品页面截图")}" loading="lazy"></a>
+            <img class="screenshot-preview" src="${escapeHtml(item.screenshot_url)}" alt="" loading="lazy">
+            <span class="screenshot-links"><a href="${escapeHtml(item.screenshot_url)}" target="_blank" rel="noreferrer">查看大图</a><a href="${escapeHtml(item.screenshot_download_url || item.screenshot_url)}">下载</a></span>
+          </span>`;
+        }
         const image = item.image_url || item.main_image_url || item.thumbnail_url;
         if (!image) return `<span class="thumb-placeholder">无图</span>`;
         return `<img class="thumb" src="${escapeHtml(image)}" alt="${escapeHtml(asinOf(item) || "竞品主图")}" loading="lazy">`;
-      }
-
-      function renderTrendSelector(rows) {
-        const candidates = [...new Set(rows.map(asinOf).filter(Boolean))].sort();
-        const signature = candidates.join("|");
-        if (signature !== state.trendCandidateSignature) {
-          state.trendCandidateSignature = signature;
-          state.trendSelected = candidates.length > 0 && candidates.length <= 5
-            ? new Set(candidates)
-            : new Set();
-        }
-        state.trendCandidates = candidates;
-        const status = document.querySelector("#trendStatus");
-        const options = document.querySelector("#trendOptions");
-        if (!candidates.length) {
-          status.textContent = "当前搜索和筛选条件下没有匹配的 ASIN。";
-          options.innerHTML = "";
-        } else if (candidates.length <= 5) {
-          status.textContent = `匹配 ${candidates.length} 个 ASIN，已自动展示全部价格趋势。`;
-          options.innerHTML = candidates.map((asin) => `<span class="trend-option">${escapeHtml(asin)}</span>`).join("");
-        } else {
-          status.textContent = `匹配 ${candidates.length} 个 ASIN，请手动勾选最多 5 个后展示。当前已选 ${state.trendSelected.size} 个。`;
-          options.innerHTML = candidates.map((asin) => `<label class="trend-option"><input class="trend-checkbox" type="checkbox" data-asin="${escapeHtml(asin)}" ${state.trendSelected.has(asin) ? "checked" : ""}>${escapeHtml(asin)}</label>`).join("");
-        }
-        if (document.querySelector("#chartView")?.classList.contains("active")) {
-          void loadTrendHistory();
-        }
-      }
-
-      async function loadTrendHistory() {
-        const selectedAsins = [...state.trendSelected].slice(0, 5);
-        const missing = selectedAsins.filter((asin) =>
-          !state.trendHistoryLoaded.has(asin) && !state.trendHistoryLoading.has(asin)
-        );
-        if (!missing.length) {
-          renderChart();
-          return;
-        }
-
-        missing.forEach((asin) => state.trendHistoryLoading.add(asin));
-        const status = document.querySelector("#trendStatus");
-        if (status) status.textContent += ` 正在加载 ${missing.length} 个 ASIN 的历史价格...`;
-        try {
-          const history = await fetchJson(`/api/market/${MARKET}/history?asins=${encodeURIComponent(missing.join(","))}`);
-          const missingSet = new Set(missing);
-          state.history = state.history
-            .filter((item) => !missingSet.has(asinOf(item)))
-            .concat(history.products || []);
-          missing.forEach((asin) => state.trendHistoryLoaded.add(asin));
-        } catch (error) {
-          showStatus(`价格趋势读取失败：${error.message}。请稍后重试。`, true);
-        } finally {
-          missing.forEach((asin) => state.trendHistoryLoading.delete(asin));
-        }
-        renderTrendSelector(state.trendCandidates.map((asin) => ({ asin })));
       }
 
       async function loadWeeklyHistory() {
@@ -1636,72 +1637,6 @@
           </html>`;
       }
 
-      function ensureChartLibrary() {
-        if (window.Chart) return Promise.resolve();
-        if (chartLibraryPromise) return chartLibraryPromise;
-        chartLibraryPromise = new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
-          script.onload = resolve;
-          script.onerror = () => reject(new Error("Chart.js load failed"));
-          document.head.appendChild(script);
-        });
-        return chartLibraryPromise;
-      }
-
-      async function renderChart() {
-        const canvas = document.querySelector("#priceChart");
-        const selectedAsins = [...state.trendSelected].slice(0, 5);
-        if (!selectedAsins.length) {
-          if (state.chart) {
-            state.chart.destroy();
-            state.chart = null;
-          }
-          canvas.hidden = true;
-          return;
-        }
-        if (!window.Chart) {
-          try {
-            await ensureChartLibrary();
-          } catch {
-            chartLibraryPromise = null;
-            showStatus("价格明细已加载，但趋势图库没有加载成功。通常是网络拦截 CDN，刷新页面或稍后重试即可。");
-            return;
-          }
-        }
-        const series = selectedAsins.map((asin) => {
-          const points = state.history
-            .filter((item) => asinOf(item) === asin && price(item.current_price) !== null)
-            .sort((a, b) => String(a.scraped_at).localeCompare(String(b.scraped_at)));
-          return { asin, points };
-        }).filter((item) => item.points.length);
-        const labels = [...new Set(series.flatMap((item) => item.points.map((point) => point.scraped_at?.slice(0, 10) || "")))]
-          .filter(Boolean)
-          .sort();
-        const colors = ["#2563eb", "#dc2626", "#047857", "#7c3aed", "#d97706"];
-        const datasets = series.map((item, index) => {
-          const byDate = new Map(item.points.map((point) => [point.scraped_at?.slice(0, 10) || "", price(point.current_price)]));
-          return {
-            label: item.asin,
-            data: labels.map((label) => byDate.has(label) ? byDate.get(label) : null),
-            borderColor: colors[index],
-            backgroundColor: colors[index],
-            tension: 0.25,
-            spanGaps: true,
-          };
-        });
-        if (state.chart) state.chart.destroy();
-        canvas.hidden = false;
-        state.chart = new Chart(canvas, {
-          type: "line",
-          data: {
-            labels,
-            datasets,
-          },
-          options: { responsive: true, scales: { y: { ticks: { callback: (value) => fmt.format(value) } } } },
-        });
-      }
-
       function renderWeeklyChanges() {
         const categories = weeklyChangeCategories();
         document.querySelector("#weeklyChanges").innerHTML = categories
@@ -1770,15 +1705,15 @@
         const asin = asinOf(last) || "-";
         const before = mode === "msrp" ? price(first.msrp_price) : price(first.current_price);
         const after = mode === "msrp" ? price(last.msrp_price) : price(last.current_price);
-        const beforeText = mode === "promo" ? (first.promotion_status || "-") : (before === null ? "-" : fmt.format(before));
-        const afterText = mode === "promo" ? (last.promotion_status || "-") : (after === null ? "-" : fmt.format(after));
+        const beforeText = before === null ? "-" : fmt.format(before);
+        const afterText = after === null ? "-" : fmt.format(after);
         return `<tr>
           <td><a class="asin-link" href="${escapeHtml(last.product_url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(asin)}</a></td>
           <td>${escapeHtml(last.category || "-")}</td>
           <td>${escapeHtml(last.style || "-")}</td>
           <td>${escapeHtml(last.model || "-")}</td>
-          <td>${escapeHtml(beforeText)}</td>
-          <td>${escapeHtml(afterText)}</td>
+          <td>${mode === "promo" ? renderPromotions(first.promotion_status) : escapeHtml(beforeText)}</td>
+          <td>${mode === "promo" ? renderPromotions(last.promotion_status) : escapeHtml(afterText)}</td>
           <td class="muted">${escapeHtml(first.scraped_at?.slice(0, 10) || "-")} → ${escapeHtml(last.scraped_at?.slice(0, 10) || "-")}</td>
         </tr>`;
       }
@@ -1808,9 +1743,8 @@
         state.visibleFocusRows = focusRows;
         renderTable(focusRows, "#focusRows", { tableId: "focus", emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
         renderFocusExportStatus();
-        renderTable(competitorRows, "#competitorRows", { tableId: "competitor", showFocus: false, showImage: true, showMemo: false, emptyMessage: "还没有竞品数据。后续导入竞品 ASIN 后会显示在这里。" });
+        renderTable(competitorRows, "#competitorRows", { tableId: "competitor", showFocus: false, showImage: true, showMemo: false, showManage: true, emptyMessage: "还没有竞品。请在上方选择对标类型并录入 ASIN。" });
         renderShellOpportunity();
-        renderTrendSelector(rows);
         renderWeeklyChanges();
         updateColumnFilterButtons();
       }
@@ -1822,7 +1756,6 @@
           button.classList.toggle("active", active);
           button.setAttribute("aria-selected", String(active));
         });
-        if (viewId === "chartView") void loadTrendHistory();
         if (viewId === "changesView") void loadWeeklyHistory();
         if (viewId === "nonActiveView") renderNonActiveProducts();
         closeColumnFilter();
@@ -1843,20 +1776,22 @@
         document.querySelector("#minPrice").placeholder = MARKET_META.currency;
         document.querySelector("#maxPrice").placeholder = MARKET_META.currency;
         initializeColumnFilters();
-        const [latest, source] = await Promise.all([
+        const [latest, source, , competitors] = await Promise.all([
           loadJson(`/api/market/${MARKET}/latest`, { products: [] }),
           loadOptionalJson(`/api/market/${MARKET}/catalog?scope=inactive`, { non_active_products: [] }),
           loadRemoteState(),
+          loadOptionalJson(`/api/market/${MARKET}/competitors`, { products: [] }),
         ]);
         state.latest = latest.products || [];
         loadSourceProductList(state.latest, source);
-        state.competitors = [];
+        state.competitors = competitors.products || [];
         if (state.latest.length) {
           showStatus("");
         } else {
           showStatus(`${MARKET_META.label}站还没有抓取数据。首次完整抓取成功后会自动显示。`, true);
         }
         fillSelect("#categoryFilter", state.latest.map((item) => item.category));
+        fillSelect("#competitorBenchmarkType", state.latest.map((item) => item.category));
         fillSelect("#styleFilter", state.latest.map((item) => item.style));
         fillSelect("#modelFilter", state.latest.map((item) => item.model));
         fillSelect("#shellBrandFilter", shellOpportunityGroups().map((item) => item.phoneBrand));
@@ -1866,6 +1801,7 @@
           .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
         document.querySelector("#nonActiveSearch").addEventListener("input", renderNonActiveProducts);
         document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
+        document.querySelector("#competitorEntryForm").addEventListener("submit", addCompetitor);
         document.querySelector("#columnFilterSearch").addEventListener("input", renderColumnFilterOptions);
         document.querySelector("#columnFilterSelectAll").addEventListener("click", () => {
           if (!state.activeColumnFilter) return;
@@ -1899,19 +1835,6 @@
           button.addEventListener("click", () => switchView(button.dataset.view));
         });
         document.addEventListener("change", (event) => {
-          if (event.target.classList.contains("trend-checkbox")) {
-            const asin = event.target.dataset.asin;
-            if (!asin) return;
-            if (event.target.checked && state.trendSelected.size >= 5) {
-              event.target.checked = false;
-              document.querySelector("#trendStatus").textContent = `最多只能选择 5 个 ASIN。当前匹配 ${state.trendCandidates.length} 个，已选 5 个。`;
-              return;
-            }
-            if (event.target.checked) state.trendSelected.add(asin);
-            else state.trendSelected.delete(asin);
-            renderTrendSelector(state.trendCandidates.map((candidate) => ({ asin: candidate })));
-            return;
-          }
           if (!event.target.classList.contains("focus-checkbox")) return;
           const asin = event.target.dataset.asin;
           if (!asin) return;
@@ -1934,6 +1857,11 @@
           renderShellOpportunity();
         });
         document.addEventListener("click", (event) => {
+          const competitorButton = event.target.closest?.(".competitor-manage");
+          if (competitorButton) {
+            void toggleCompetitor(competitorButton);
+            return;
+          }
           const metricButton = event.target.closest?.(".metric-filter");
           if (metricButton) {
             const filter = metricButton.dataset.metricFilter;

@@ -366,13 +366,261 @@ async function putShellState(request, env, market) {
   return json({ ok: true });
 }
 
+function validAsin(value) {
+  const asin = String(value || "").trim().toUpperCase();
+  return /^[A-Z0-9]{10}$/.test(asin) ? asin : null;
+}
+
+async function employeeCompetitors(request, env, market) {
+  requireEmployee(request, env);
+  const result = await readSession(env).prepare(
+    `WITH latest AS (
+       SELECT *, ROW_NUMBER() OVER (
+         PARTITION BY account_key, market, asin ORDER BY scraped_at DESC, id DESC
+       ) AS row_number
+       FROM competitor_snapshots
+       WHERE account_key = ? AND market = ?
+     )
+     SELECT cp.asin, cp.benchmark_type, cp.active, cp.created_at, cp.updated_at,
+            latest.id AS snapshot_id, latest.scraped_at, latest.status,
+            latest.record_json, latest.screenshot_key
+     FROM competitor_products cp
+     LEFT JOIN latest
+       ON latest.account_key = cp.account_key AND latest.market = cp.market
+      AND latest.asin = cp.asin AND latest.row_number = 1
+     WHERE cp.account_key = ? AND cp.market = ?
+     ORDER BY cp.active DESC, cp.benchmark_type, cp.asin`
+  ).bind(ACCOUNT_KEY, market, ACCOUNT_KEY, market).all();
+  const products = result.results.map((row) => {
+    const record = safeJson(row.record_json, {}) || {};
+    const snapshotPath = row.snapshot_id
+      ? `/api/market/${market}/competitor-screenshot/${row.snapshot_id}`
+      : null;
+    return {
+      ...record,
+      asin: row.asin,
+      category: row.benchmark_type,
+      benchmark_type: row.benchmark_type,
+      active: Boolean(row.active),
+      registry_created_at: row.created_at,
+      registry_updated_at: row.updated_at,
+      scraped_at: row.scraped_at || record.scraped_at || null,
+      status: row.status || record.status || "等待首次抓取",
+      screenshot_url: row.screenshot_key ? snapshotPath : null,
+      screenshot_download_url: row.screenshot_key ? `${snapshotPath}?download=1` : null,
+    };
+  });
+  return json({ market, products });
+}
+
+async function addEmployeeCompetitor(request, env, market) {
+  const email = requireEmployee(request, env);
+  const payload = await request.json();
+  const asin = validAsin(payload.asin);
+  const benchmarkType = String(payload.benchmark_type || "").trim();
+  if (!asin) return json({ error: "Invalid ASIN" }, 400);
+  if (!benchmarkType) return json({ error: "benchmark_type is required" }, 400);
+  const ownType = await env.DB.prepare(
+    `SELECT 1 FROM products
+     WHERE account_key = ? AND market = ? AND active = 1
+       AND (json_extract(metadata_json, '$.category') = ?
+         OR json_extract(metadata_json, '$.type') = ?)
+     LIMIT 1`
+  ).bind(ACCOUNT_KEY, market, benchmarkType, benchmarkType).first();
+  if (!ownType) return json({ error: "benchmark_type must match an active own-product type" }, 400);
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `INSERT INTO competitor_products
+       (account_key, market, asin, benchmark_type, active, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 1, ?, ?, ?)
+     ON CONFLICT(account_key, market, asin) DO UPDATE SET
+       benchmark_type = excluded.benchmark_type,
+       active = 1,
+       updated_at = excluded.updated_at`
+  ).bind(ACCOUNT_KEY, market, asin, benchmarkType, email, now, now).run();
+  return json({ ok: true, market, asin, benchmark_type: benchmarkType, active: true });
+}
+
+async function updateEmployeeCompetitor(request, env, market, asinValue) {
+  requireEmployee(request, env);
+  const asin = validAsin(asinValue);
+  if (!asin) return json({ error: "Invalid ASIN" }, 400);
+  const payload = await request.json();
+  if (!Object.hasOwn(payload, "active")) return json({ error: "active is required" }, 400);
+  const result = await env.DB.prepare(
+    `UPDATE competitor_products SET active = ?, updated_at = ?
+     WHERE account_key = ? AND market = ? AND asin = ?`
+  ).bind(payload.active ? 1 : 0, new Date().toISOString(), ACCOUNT_KEY, market, asin).run();
+  if (!result.meta.changes) return json({ error: "Competitor not found" }, 404);
+  return json({ ok: true, market, asin, active: Boolean(payload.active) });
+}
+
+async function competitorScreenshot(request, env, market, snapshotId, url) {
+  requireEmployee(request, env);
+  const id = Number(snapshotId);
+  if (!Number.isInteger(id) || id <= 0) return json({ error: "Invalid snapshot" }, 400);
+  const row = await readSession(env).prepare(
+    `SELECT asin, screenshot_key, screenshot_content_type
+     FROM competitor_snapshots
+     WHERE id = ? AND account_key = ? AND market = ?`
+  ).bind(id, ACCOUNT_KEY, market).first();
+  if (!row?.screenshot_key) return json({ error: "Screenshot not found" }, 404);
+  const object = await env.SCREENSHOTS.get(row.screenshot_key);
+  if (!object) return json({ error: "Screenshot object not found" }, 404);
+  const download = url.searchParams.get("download") === "1";
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("content-type", row.screenshot_content_type || "image/jpeg");
+  headers.set("cache-control", "private, max-age=86400");
+  headers.set("x-content-type-options", "nosniff");
+  headers.set(
+    "content-disposition",
+    `${download ? "attachment" : "inline"}; filename="${row.asin}-${id}.jpg"`
+  );
+  return new Response(object.body, { headers });
+}
+
+async function ingestCompetitorList(request, env, url) {
+  requireIngestToken(request, env);
+  const market = marketCode(url.searchParams.get("market"));
+  if (!market) return json({ error: "Unsupported market" }, 400);
+  const result = await env.DB.prepare(
+    `SELECT asin, benchmark_type FROM competitor_products
+     WHERE account_key = ? AND market = ? AND active = 1
+     ORDER BY benchmark_type, asin`
+  ).bind(ACCOUNT_KEY, market).all();
+  return json({ market, products: result.results });
+}
+
+async function ingestCompetitorResult(request, env) {
+  requireIngestToken(request, env);
+  const payload = await request.json();
+  const market = marketCode(payload.market);
+  const record = payload.record && typeof payload.record === "object" ? payload.record : null;
+  const asin = validAsin(record?.asin);
+  if (!market || !asin || !record) return json({ error: "market and record.asin are required" }, 400);
+  const registered = await env.DB.prepare(
+    `SELECT benchmark_type FROM competitor_products
+     WHERE account_key = ? AND market = ? AND asin = ? AND active = 1`
+  ).bind(ACCOUNT_KEY, market, asin).first();
+  if (!registered) return json({ error: "Active competitor not found" }, 404);
+
+  const screenshotBase64 = String(payload.screenshot_base64 || "");
+  if (!screenshotBase64 || screenshotBase64.length > 1_500_000) {
+    return json({ error: "A screenshot of approximately 1 MB or less is required" }, 400);
+  }
+  let screenshot;
+  try {
+    const binary = atob(screenshotBase64);
+    screenshot = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  } catch {
+    return json({ error: "Invalid screenshot encoding" }, 400);
+  }
+  if (screenshot.byteLength > 1_100_000) {
+    return json({ error: "Screenshot exceeds the 1 MB storage limit" }, 413);
+  }
+  const scrapedAt = String(record.scraped_at || new Date().toISOString());
+  const date = scrapedAt.slice(0, 10);
+  const stamp = scrapedAt.replace(/[^0-9]/g, "").slice(0, 14) || Date.now();
+  const screenshotKey = `competitors/${market}/${asin}/${date}/${stamp}.jpg`;
+  const contentType = payload.screenshot_content_type === "image/png" ? "image/png" : "image/jpeg";
+  await env.SCREENSHOTS.put(screenshotKey, screenshot, {
+    httpMetadata: { contentType },
+    customMetadata: { account: ACCOUNT_KEY, market, asin, scrapedAt },
+  });
+  try {
+    await env.DB.prepare(
+      `INSERT INTO competitor_snapshots
+         (account_key, market, asin, scraped_at, status, current_price, msrp_price,
+          record_json, screenshot_key, screenshot_content_type, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(account_key, market, asin, scraped_at) DO UPDATE SET
+         status = excluded.status,
+         current_price = excluded.current_price,
+         msrp_price = excluded.msrp_price,
+         record_json = excluded.record_json,
+         screenshot_key = excluded.screenshot_key,
+         screenshot_content_type = excluded.screenshot_content_type`
+    ).bind(
+      ACCOUNT_KEY, market, asin, scrapedAt, record.status || null,
+      record.current_price ?? null, record.msrp_price ?? null,
+      JSON.stringify({ ...record, category: registered.benchmark_type }),
+      screenshotKey, contentType, new Date().toISOString()
+    ).run();
+  } catch (error) {
+    await env.SCREENSHOTS.delete(screenshotKey);
+    throw error;
+  }
+  return json({ ok: true, market, asin, scraped_at: scrapedAt });
+}
+
+async function cleanupCompetitorSnapshots(request, env, url) {
+  requireIngestToken(request, env);
+  const market = marketCode(url.searchParams.get("market"));
+  if (!market) return json({ error: "Unsupported market" }, 400);
+  const expired = await env.DB.prepare(
+    `SELECT id, screenshot_key FROM competitor_snapshots
+     WHERE account_key = ? AND market = ?
+       AND scraped_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-60 days')`
+  ).bind(ACCOUNT_KEY, market).all();
+  const keys = expired.results.map((row) => row.screenshot_key).filter(Boolean);
+  for (let index = 0; index < keys.length; index += 1000) {
+    await env.SCREENSHOTS.delete(keys.slice(index, index + 1000));
+  }
+  await env.DB.prepare(
+    `DELETE FROM competitor_snapshots
+     WHERE account_key = ? AND market = ?
+       AND scraped_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-60 days')`
+  ).bind(ACCOUNT_KEY, market).run();
+  return json({ ok: true, market, deleted: expired.results.length, retention_days: 60 });
+}
+
 async function handleApi(request, env, url, ctx) {
   if (url.pathname === "/api/ingest" && request.method === "POST") return ingest(request, env);
   if (url.pathname === "/api/ingest/seed" && request.method === "GET") {
     return seedHistory(request, env, url);
   }
+  if (url.pathname === "/api/ingest/competitors" && request.method === "GET") {
+    return ingestCompetitorList(request, env, url);
+  }
+  if (url.pathname === "/api/ingest/competitor-result" && request.method === "POST") {
+    return ingestCompetitorResult(request, env);
+  }
+  if (url.pathname === "/api/ingest/competitors/cleanup" && request.method === "POST") {
+    return cleanupCompetitorSnapshots(request, env, url);
+  }
   if (url.pathname === "/api/markets" && request.method === "GET") {
     return cachedEmployeeResponse(request, env, ctx, 60, () => marketList(request, env));
+  }
+
+  const competitorScreenshotMatch = url.pathname.match(
+    /^\/api\/market\/(UK|DE|IT|ES)\/competitor-screenshot\/(\d+)$/i
+  );
+  if (competitorScreenshotMatch && request.method === "GET") {
+    return competitorScreenshot(
+      request,
+      env,
+      marketCode(competitorScreenshotMatch[1]),
+      competitorScreenshotMatch[2],
+      url
+    );
+  }
+  const competitorItemMatch = url.pathname.match(
+    /^\/api\/market\/(UK|DE|IT|ES)\/competitors\/([A-Z0-9]{10})$/i
+  );
+  if (competitorItemMatch && request.method === "PATCH") {
+    return updateEmployeeCompetitor(
+      request, env, marketCode(competitorItemMatch[1]), competitorItemMatch[2]
+    );
+  }
+  const competitorListMatch = url.pathname.match(
+    /^\/api\/market\/(UK|DE|IT|ES)\/competitors$/i
+  );
+  if (competitorListMatch) {
+    const market = marketCode(competitorListMatch[1]);
+    if (request.method === "GET") return employeeCompetitors(request, env, market);
+    if (request.method === "POST") return addEmployeeCompetitor(request, env, market);
+    return json({ error: "Method not allowed" }, 405);
   }
 
   const match = url.pathname.match(/^\/api\/market\/(UK|DE|IT|ES)\/(latest|history|catalog|state|shell-state)$/i);
@@ -399,7 +647,9 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.hostname === INGEST_HOST) {
-        const isIngestPath = url.pathname === "/api/ingest" || url.pathname === "/api/ingest/seed";
+        const isIngestPath = url.pathname === "/api/ingest"
+          || url.pathname === "/api/ingest/seed"
+          || url.pathname.startsWith("/api/ingest/competitor");
         return isIngestPath ? await handleApi(request, env, url, ctx) : json({ error: "Not found" }, 404);
       }
       if (url.hostname !== DASHBOARD_HOST && !["localhost", "127.0.0.1"].includes(url.hostname)) {

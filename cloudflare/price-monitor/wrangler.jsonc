@@ -27,6 +27,12 @@
       "migrations_dir": "migrations"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "SCREENSHOTS",
+      "bucket_name": "amazon-price-monitor-screenshots"
+    }
+  ],
   "observability": {
     "enabled": true
   }

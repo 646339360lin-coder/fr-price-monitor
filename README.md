@@ -137,7 +137,8 @@ GitHub Secrets 使用以下名称：
 1. `.github/workflows/daily_eu_market_price_refresh.yml` 在 GitHub Actions 中按站点错峰启动 Playwright。
 2. `multi_market_price_refresh.py` 分别设置当地语言、币种和配送邮编后抓取 Amazon 页面。
 3. `cloudflare_price_sync.py` 把本次结果上传到 Cloudflare D1；四站价格 JSON 不提交到公开 Git 仓库。
-4. `https://price.tentoki.online` 从 D1 读取数据，并通过顶部按钮切换英国、德国、意大利和西班牙。
+4. `competitor_market_refresh.py` 读取当前站点已登记的竞品 ASIN，使用相同的语言、邮编和币种抓取页面，并把每日页面截图保存到私有 R2。
+5. `https://price.tentoki.online` 从 D1 读取数据，并通过顶部按钮切换英国、德国、意大利和西班牙。
 
 四站自动运行时间（UTC）：
 
@@ -150,12 +151,14 @@ GitHub Secrets 使用以下名称：
 
 Cloudflare 目录说明：
 
-- `cloudflare/price-monitor/src/worker.js`：D1 API、员工备忘与重点关注状态接口
+- `cloudflare/price-monitor/src/worker.js`：D1 API、竞品登记、员工状态与私有截图读取接口
 - `cloudflare/price-monitor/public/index.html`：四站统一看板
 - `cloudflare/price-monitor/migrations/`：D1 数据表
-- `cloudflare/price-monitor/wrangler.jsonc`：Worker、D1 与自定义域名配置
+- `cloudflare/price-monitor/wrangler.jsonc`：Worker、D1、R2 与自定义域名配置
 
 `price.tentoki.online` 应由 Cloudflare Access 保护，只允许已登记的员工邮箱访问。`price-ingest.tentoki.online` 只供 GitHub Actions 上传数据，Worker 会拒绝该域名上的看板和价格查询接口。
+
+竞品跟踪按站点独立管理。在对应站点页面选择“对标类型”（选项来自自己的在售产品类型）并录入竞品 ASIN；下一次该站点定时任务会抓取价格、评分、评论、促销等字段并保存完整页面截图。截图不公开，员工可在看板中悬停预览、点击查看或下载。每张完整页面截图会自动压缩到约 1 MB 以内，上传接口也会拒绝超限文件；R2 生命周期和每日清理任务均按 60 天保留。
 
 ## 从零创建 GitHub 仓库
 
