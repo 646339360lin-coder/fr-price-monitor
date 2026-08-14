@@ -5,10 +5,18 @@ on:
     - cron: "20 16 * * *"
   workflow_dispatch:
     inputs:
+      offset:
+        description: "Optional zero-based ASIN offset for recovery runs"
+        required: false
+        default: "0"
       limit:
-        description: "Optional ASIN limit for validation; leave empty for full run"
+        description: "Optional ASIN count after offset; leave empty for all remaining"
         required: false
         default: ""
+      batch_size:
+        description: "Products per GitHub runner"
+        required: false
+        default: "50"
 
 permissions:
   contents: read
@@ -29,7 +37,9 @@ jobs:
       - name: Build batch matrix
         id: matrix
         env:
+          REQUESTED_OFFSET: ${{ inputs.offset }}
           REQUESTED_LIMIT: ${{ inputs.limit }}
+          REQUESTED_BATCH_SIZE: ${{ inputs.batch_size }}
         run: |
           batches=$(python - <<'PY'
           import json
@@ -38,10 +48,16 @@ jobs:
 
           with open("product_list_szty.json", encoding="utf-8") as handle:
               count = len(json.load(handle).get("products", []))
+          offset = int(os.environ.get("REQUESTED_OFFSET", "").strip() or 0)
+          if offset < 0 or offset >= count:
+              raise SystemExit(f"offset must be between 0 and {count - 1}")
+          count -= offset
           requested = os.environ.get("REQUESTED_LIMIT", "").strip()
           if requested:
               count = min(count, int(requested))
-          batch_size = 75
+          batch_size = int(os.environ.get("REQUESTED_BATCH_SIZE", "").strip() or 50)
+          if batch_size < 1:
+              raise SystemExit("batch_size must be at least 1")
           print(json.dumps(list(range(max(1, math.ceil(count / batch_size))))))
           PY
           )
@@ -84,13 +100,17 @@ jobs:
       - name: Refresh Amazon.nl prices
         env:
           PYTHONUNBUFFERED: "1"
+          REQUESTED_OFFSET: ${{ inputs.offset }}
           REQUESTED_LIMIT: ${{ inputs.limit }}
+          REQUESTED_BATCH_SIZE: ${{ inputs.batch_size }}
         run: |
-          batch_size=75
-          offset=$(( ${{ matrix.batch }} * batch_size ))
+          batch_size="${REQUESTED_BATCH_SIZE:-50}"
+          base_offset="${REQUESTED_OFFSET:-0}"
+          offset=$(( base_offset + ${{ matrix.batch }} * batch_size ))
           limit="$batch_size"
           if [ -n "$REQUESTED_LIMIT" ]; then
-            remaining=$(( REQUESTED_LIMIT - offset ))
+            processed=$(( ${{ matrix.batch }} * batch_size ))
+            remaining=$(( REQUESTED_LIMIT - processed ))
             if [ "$remaining" -lt "$limit" ]; then limit="$remaining"; fi
           fi
           python multi_market_price_refresh.py \
