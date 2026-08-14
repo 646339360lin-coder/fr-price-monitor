@@ -184,6 +184,8 @@ GitHub Actions 使用以下独立 Secrets：
 - `.github/workflows/weekly_szty_wps_product_sync.yml`
 - `.github/workflows/daily_szty_nl_price_refresh.yml`
 
+每日抓价默认每个 GitHub Runner 处理 50 个 ASIN，降低单个 Runner 被 Amazon.nl 限制后影响整批数据的范围。手动恢复时可在 Actions 页面填写 `offset`、`limit` 和 `batch_size`，只重跑指定区间；例如 `offset=675`、`limit=49`、`batch_size=10` 表示把第 676 至 724 个 ASIN 拆成 5 个小批次。
+
 Cloudflare 部署配置位于 `cloudflare/price-monitor/wrangler.szty.jsonc`。D1 表通过 `account_key=szty` 与 TVL 的 `account_key=primary` 隔离，不需要新增数据库表。
 
 ## 从零创建 GitHub 仓库
