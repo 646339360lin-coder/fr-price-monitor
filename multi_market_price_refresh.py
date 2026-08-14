@@ -141,6 +141,7 @@ async def continue_shopping_if_prompted(page: "Page") -> bool:
         "Weiter einkaufen",
         "Continua gli acquisti",
         "Continuar comprando",
+        "Doorgaan met winkelen",
     )
     body_text = (await safe_text(page, "body") or "").lower()
     if len(body_text) > 2_000 or await page.locator("#productTitle").count():
@@ -651,8 +652,8 @@ async def run(args: argparse.Namespace) -> int:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Amazon UK/DE/IT/ES price refresh")
-    parser.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES"))
+    parser = argparse.ArgumentParser(description="Amazon European marketplace price refresh")
+    parser.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES", "NL"))
     parser.add_argument("--marketplace-file", default=str(MARKETPLACE_FILE))
     parser.add_argument("--product-list", default="product_list.json")
     parser.add_argument("--latest-output")

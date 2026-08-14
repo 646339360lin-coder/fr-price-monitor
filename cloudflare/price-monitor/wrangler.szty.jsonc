@@ -1,0 +1,45 @@
+{
+  "$schema": "../../logistics_monitor/node_modules/wrangler/config-schema.json",
+  "name": "amazon-szty-price-monitor",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-05-22",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "szty.price.tentoki.online",
+      "custom_domain": true
+    },
+    {
+      "pattern": "szty-price-ingest.tentoki.online",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "ACCOUNT_KEY": "szty",
+    "DASHBOARD_HOST": "szty.price.tentoki.online",
+    "INGEST_HOST": "szty-price-ingest.tentoki.online",
+    "ALLOWED_EMAILS": "646339360lin@gmail.com,2862785687@qq.com"
+  },
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "amazon-eu-price-monitor",
+      "database_id": "c627fe04-3a86-4bc7-a306-734477e67054",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SCREENSHOTS",
+      "bucket_name": "amazon-price-monitor-screenshots"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

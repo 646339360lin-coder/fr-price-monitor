@@ -1,0 +1,75 @@
+name: Daily SZTY Amazon NL Price Refresh
+
+on:
+  schedule:
+    - cron: "20 16 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Optional ASIN limit for validation; leave empty for full run"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: szty-price-refresh-nl
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Download previous valid observations
+        env:
+          PRICE_MONITOR_URL: https://szty-price-ingest.tentoki.online
+          PRICE_MONITOR_INGEST_TOKEN: ${{ secrets.SZTY_PRICE_MONITOR_INGEST_TOKEN }}
+        run: |
+          python cloudflare_price_sync.py download-seed \
+            --account szty \
+            --market NL \
+            --output .runtime/szty/nl/price_history.json
+
+      - name: Refresh Amazon.nl prices
+        env:
+          PYTHONUNBUFFERED: "1"
+          REQUESTED_LIMIT: ${{ inputs.limit }}
+        run: |
+          limit_args=()
+          if [ -n "$REQUESTED_LIMIT" ]; then
+            limit_args=(--limit "$REQUESTED_LIMIT")
+          fi
+          python multi_market_price_refresh.py \
+            --market NL \
+            --product-list product_list_szty.json \
+            --retry-failures 1 \
+            --latest-output .runtime/szty/nl/price_results_latest.json \
+            --history-output .runtime/szty/nl/price_history.json \
+            "${limit_args[@]}"
+
+      - name: Upload results to Cloudflare
+        env:
+          PRICE_MONITOR_URL: https://szty-price-ingest.tentoki.online
+          PRICE_MONITOR_INGEST_TOKEN: ${{ secrets.SZTY_PRICE_MONITOR_INGEST_TOKEN }}
+        run: |
+          python cloudflare_price_sync.py upload \
+            --account szty \
+            --market NL \
+            --latest .runtime/szty/nl/price_results_latest.json \
+            --catalog product_list_szty.json

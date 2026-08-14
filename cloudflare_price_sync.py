@@ -52,8 +52,8 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
     temp_path.replace(path)
 
 
-def download_seed(market: str, output: Path) -> None:
-    payload = api_request("GET", f"/api/ingest/seed?market={market}")
+def download_seed(market: str, output: Path, account: str) -> None:
+    payload = api_request("GET", f"/api/ingest/seed?market={market}&account={account}")
     if not isinstance(payload.get("products"), list):
         raise RuntimeError("Cloudflare seed response is missing products")
     write_json_atomic(output, payload)
@@ -76,7 +76,7 @@ def market_catalog(catalog: dict[str, Any], market: dict[str, Any]) -> dict[str,
     return result
 
 
-def upload(market_code: str, latest_path: Path, catalog_path: Path) -> None:
+def upload(market_code: str, latest_path: Path, catalog_path: Path, account: str) -> None:
     market = load_marketplace(market_code)
     with latest_path.open("r", encoding="utf-8") as handle:
         latest = json.load(handle)
@@ -87,7 +87,7 @@ def upload(market_code: str, latest_path: Path, catalog_path: Path) -> None:
     response = api_request(
         "POST",
         "/api/ingest",
-        {"account": "primary", "market": market_code, "latest": latest, "catalog": catalog},
+        {"account": account, "market": market_code, "latest": latest, "catalog": catalog},
     )
     if not response.get("ok"):
         raise RuntimeError(f"Cloudflare ingest rejected payload: {response}")
@@ -101,12 +101,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Synchronize marketplace price data with Cloudflare")
     subparsers = parser.add_subparsers(dest="command", required=True)
     seed = subparsers.add_parser("download-seed")
-    seed.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES"))
+    seed.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES", "NL"))
     seed.add_argument("--output", required=True, type=Path)
+    seed.add_argument("--account", default="primary")
     push = subparsers.add_parser("upload")
-    push.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES"))
+    push.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES", "NL"))
     push.add_argument("--latest", required=True, type=Path)
     push.add_argument("--catalog", default=Path("product_list.json"), type=Path)
+    push.add_argument("--account", default="primary")
     return parser.parse_args()
 
 
@@ -114,9 +116,9 @@ def main() -> int:
     args = parse_args()
     try:
         if args.command == "download-seed":
-            download_seed(args.market, args.output)
+            download_seed(args.market, args.output, args.account)
         else:
-            upload(args.market, args.latest, args.catalog)
+            upload(args.market, args.latest, args.catalog, args.account)
         return 0
     except RuntimeError as exc:
         print(str(exc), file=os.sys.stderr)

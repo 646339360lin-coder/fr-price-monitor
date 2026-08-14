@@ -164,6 +164,7 @@
         <a class="market-button" data-market="DE" href="/?market=DE">德国站</a>
         <a class="market-button" data-market="IT" href="/?market=IT">意大利站</a>
         <a class="market-button" data-market="ES" href="/?market=ES">西班牙站</a>
+        <a class="market-button" data-market="NL" href="/?market=NL">荷兰站</a>
       </nav>
     </header>
 
@@ -398,15 +399,20 @@
         DE: { label: "德国", site: "Amazon.de", currency: "EUR", locale: "de-DE", host: "www.amazon.de" },
         IT: { label: "意大利", site: "Amazon.it", currency: "EUR", locale: "it-IT", host: "www.amazon.it" },
         ES: { label: "西班牙", site: "Amazon.es", currency: "EUR", locale: "es-ES", host: "www.amazon.es" },
+        NL: { label: "荷兰", site: "Amazon.nl", currency: "EUR", locale: "nl-NL", host: "www.amazon.nl" },
       };
+      const ACCOUNT = window.location.hostname.toLowerCase().startsWith("szty.") ? "szty" : "primary";
+      const ACCOUNT_MARKETS = ACCOUNT === "szty" ? ["NL"] : ["UK", "DE", "IT", "ES"];
       const requestedMarket = new URLSearchParams(window.location.search).get("market")?.toUpperCase();
-      const MARKET = MARKET_CONFIG[requestedMarket] ? requestedMarket : "UK";
+      const MARKET = requestedMarket && ACCOUNT_MARKETS.includes(requestedMarket)
+        ? requestedMarket
+        : ACCOUNT_MARKETS[0];
       const MARKET_META = MARKET_CONFIG[MARKET];
-      const NOTES_KEY = `amazon_eu_price_monitor_notes_${MARKET}_v1`;
-      const FOCUS_KEY = `amazon_eu_price_monitor_focus_${MARKET}_v1`;
-      const SHELL_OPPORTUNITY_KEY = `amazon_eu_price_monitor_shell_opportunity_${MARKET}_v1`;
-      const SOURCE_PRODUCTS_DRAFT_KEY = `amazon_eu_price_monitor_source_products_draft_${MARKET}_v1`;
-      const NON_ACTIVE_NOTES_KEY = `amazon_eu_price_monitor_non_active_notes_${MARKET}_v1`;
+      const NOTES_KEY = `amazon_eu_price_monitor_notes_${ACCOUNT}_${MARKET}_v1`;
+      const FOCUS_KEY = `amazon_eu_price_monitor_focus_${ACCOUNT}_${MARKET}_v1`;
+      const SHELL_OPPORTUNITY_KEY = `amazon_eu_price_monitor_shell_opportunity_${ACCOUNT}_${MARKET}_v1`;
+      const SOURCE_PRODUCTS_DRAFT_KEY = `amazon_eu_price_monitor_source_products_draft_${ACCOUNT}_${MARKET}_v1`;
+      const NON_ACTIVE_NOTES_KEY = `amazon_eu_price_monitor_non_active_notes_${ACCOUNT}_${MARKET}_v1`;
       const SHELL_TYPES = ["清水壳-单壳", "清水壳-3in1"];
       const SOURCE_FIELDS = ["asin", "url", "brand", "category", "style", "model", "spec", "phone_brand", "sku", "isku", "fnsku", "source_row", "product_status"];
       const EMPTY_FILTER_VALUE = "（空白）";
@@ -1768,11 +1774,16 @@
       async function init() {
         document.title = `${MARKET_META.site} 价格监控看板`;
         document.querySelector("#marketEyebrow").textContent = `${MARKET_META.site} Price Monitor`;
-        document.querySelector("#marketTitle").textContent = `${MARKET_META.label}站手机配件价格监控`;
+        document.querySelector("#marketTitle").textContent = `${ACCOUNT === "szty" ? "SZTY " : ""}${MARKET_META.label}站手机配件价格监控`;
         document.querySelector("#marketSubtitle").textContent = `配送地区和当地语言已固定，价格币种为 ${MARKET_META.currency}。`;
         document.querySelectorAll(".market-button").forEach((button) => {
+          button.hidden = !ACCOUNT_MARKETS.includes(button.dataset.market);
           button.classList.toggle("active", button.dataset.market === MARKET);
         });
+        if (ACCOUNT === "szty") {
+          document.querySelector('[data-view="competitorView"]').hidden = true;
+          document.querySelector("#competitorView").hidden = true;
+        }
         document.querySelector("#minPrice").placeholder = MARKET_META.currency;
         document.querySelector("#maxPrice").placeholder = MARKET_META.currency;
         initializeColumnFilters();
@@ -1780,7 +1791,9 @@
           loadJson(`/api/market/${MARKET}/latest`, { products: [] }),
           loadOptionalJson(`/api/market/${MARKET}/catalog?scope=inactive`, { non_active_products: [] }),
           loadRemoteState(),
-          loadOptionalJson(`/api/market/${MARKET}/competitors`, { products: [] }),
+          ACCOUNT === "szty"
+            ? Promise.resolve({ products: [] })
+            : loadOptionalJson(`/api/market/${MARKET}/competitors`, { products: [] }),
         ]);
         state.latest = latest.products || [];
         loadSourceProductList(state.latest, source);
@@ -1801,7 +1814,9 @@
           .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
         document.querySelector("#nonActiveSearch").addEventListener("input", renderNonActiveProducts);
         document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
-        document.querySelector("#competitorEntryForm").addEventListener("submit", addCompetitor);
+        if (ACCOUNT !== "szty") {
+          document.querySelector("#competitorEntryForm").addEventListener("submit", addCompetitor);
+        }
         document.querySelector("#columnFilterSearch").addEventListener("input", renderColumnFilterOptions);
         document.querySelector("#columnFilterSelectAll").addEventListener("click", () => {
           if (!state.activeColumnFilter) return;

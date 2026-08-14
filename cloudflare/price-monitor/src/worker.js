@@ -1,12 +1,22 @@
-const ACCOUNT_KEY = "primary";
-const DASHBOARD_HOST = "price.tentoki.online";
-const INGEST_HOST = "price-ingest.tentoki.online";
 const MARKETS = {
   UK: { label: "英国", site: "Amazon.co.uk", currency: "GBP" },
   DE: { label: "德国", site: "Amazon.de", currency: "EUR" },
   IT: { label: "意大利", site: "Amazon.it", currency: "EUR" },
   ES: { label: "西班牙", site: "Amazon.es", currency: "EUR" },
+  NL: { label: "荷兰", site: "Amazon.nl", currency: "EUR" },
 };
+
+function accountKey(env) {
+  return String(env.ACCOUNT_KEY || "primary").trim().toLowerCase();
+}
+
+function dashboardHost(env) {
+  return String(env.DASHBOARD_HOST || "price.tentoki.online").trim().toLowerCase();
+}
+
+function ingestHost(env) {
+  return String(env.INGEST_HOST || "price-ingest.tentoki.online").trim().toLowerCase();
+}
 
 function json(data, status = 200, cacheControl = "no-store") {
   return Response.json(data, {
@@ -91,7 +101,7 @@ async function ingest(request, env) {
   const payload = await request.json();
   const market = marketCode(payload.market || payload.latest?.market);
   if (!market) return json({ error: "Unsupported market" }, 400);
-  if ((payload.account || ACCOUNT_KEY) !== ACCOUNT_KEY) {
+  if ((payload.account || accountKey(env)) !== accountKey(env)) {
     return json({ error: "Unsupported account" }, 400);
   }
 
@@ -124,7 +134,7 @@ async function ingest(request, env) {
          active = excluded.active,
          metadata_json = excluded.metadata_json,
          updated_at = excluded.updated_at`
-    ).bind(ACCOUNT_KEY, market, now, JSON.stringify(catalog)),
+    ).bind(accountKey(env), market, now, JSON.stringify(catalog)),
     env.DB.prepare(
       `INSERT INTO latest_prices
          (account_key, market, asin, scraped_at, status, current_price, msrp_price, record_json, updated_at)
@@ -142,7 +152,7 @@ async function ingest(request, env) {
          msrp_price = excluded.msrp_price,
          record_json = excluded.record_json,
          updated_at = excluded.updated_at`
-    ).bind(ACCOUNT_KEY, market, generatedAt, now, JSON.stringify(latest)),
+    ).bind(accountKey(env), market, generatedAt, now, JSON.stringify(latest)),
     env.DB.prepare(
       `INSERT OR IGNORE INTO price_history
          (account_key, market, asin, scraped_at, current_price, msrp_price,
@@ -155,7 +165,7 @@ async function ingest(request, env) {
               json_extract(value, '$.status'), value
        FROM json_each(?)
        WHERE json_extract(value, '$.asin') IS NOT NULL`
-    ).bind(ACCOUNT_KEY, market, generatedAt, JSON.stringify(latest)),
+    ).bind(accountKey(env), market, generatedAt, JSON.stringify(latest)),
     env.DB.prepare(
       `INSERT INTO market_runs
          (account_key, market, generated_at, total_count, success_count, stale_count)
@@ -165,7 +175,7 @@ async function ingest(request, env) {
          total_count = excluded.total_count,
          success_count = excluded.success_count,
          stale_count = excluded.stale_count`
-    ).bind(ACCOUNT_KEY, market, generatedAt, latest.length, successCount, staleCount),
+    ).bind(accountKey(env), market, generatedAt, latest.length, successCount, staleCount),
   ];
 
   await env.DB.batch(statements);
@@ -173,7 +183,7 @@ async function ingest(request, env) {
     `DELETE FROM price_history
      WHERE account_key = ? AND market = ?
        AND scraped_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-180 days')`
-  ).bind(ACCOUNT_KEY, market).run();
+  ).bind(accountKey(env), market).run();
 
   return json({
     ok: true,
@@ -188,12 +198,14 @@ async function ingest(request, env) {
 
 async function seedHistory(request, env, url) {
   requireIngestToken(request, env);
+  const requestedAccount = String(url.searchParams.get("account") || accountKey(env)).toLowerCase();
+  if (requestedAccount !== accountKey(env)) return json({ error: "Unsupported account" }, 400);
   const market = marketCode(url.searchParams.get("market"));
   if (!market) return json({ error: "Unsupported market" }, 400);
   const result = await env.DB.prepare(
     `SELECT record_json FROM latest_prices
      WHERE account_key = ? AND market = ? ORDER BY asin`
-  ).bind(ACCOUNT_KEY, market).all();
+  ).bind(accountKey(env), market).all();
   return json({
     generated_at: new Date().toISOString(),
     market,
@@ -208,7 +220,7 @@ async function marketList(request, env) {
   const result = await db.prepare(
     `SELECT market, generated_at, total_count, success_count, stale_count
      FROM market_runs WHERE account_key = ?`
-  ).bind(ACCOUNT_KEY).all();
+  ).bind(accountKey(env)).all();
   const runs = Object.fromEntries(result.results.map((row) => [row.market, row]));
   return json({
     markets: Object.entries(MARKETS).map(([code, config]) => ({
@@ -224,10 +236,10 @@ async function latestPrices(request, env, market) {
   const result = await db.prepare(
     `SELECT record_json FROM latest_prices
      WHERE account_key = ? AND market = ? ORDER BY asin`
-  ).bind(ACCOUNT_KEY, market).all();
+  ).bind(accountKey(env), market).all();
   const run = await db.prepare(
     `SELECT generated_at FROM market_runs WHERE account_key = ? AND market = ?`
-  ).bind(ACCOUNT_KEY, market).first();
+  ).bind(accountKey(env), market).first();
   return json({
     generated_at: run?.generated_at || null,
     market,
@@ -252,7 +264,7 @@ async function priceHistory(request, env, market, url) {
     `SELECT record_json FROM price_history
      WHERE account_key = ? AND market = ?
        AND scraped_at >= strftime('%Y-%m-%dT%H:%M:%SZ', 'now', ?)`;
-  const bindings = [ACCOUNT_KEY, market, `-${historyDays} days`];
+  const bindings = [accountKey(env), market, `-${historyDays} days`];
   if (requestedAsins.length) {
     query += ` AND asin IN (${requestedAsins.map(() => "?").join(",")})`;
     bindings.push(...requestedAsins);
@@ -274,7 +286,7 @@ async function catalog(request, env, market, url) {
   const result = await readSession(env).prepare(
     `SELECT active, metadata_json FROM products
      WHERE account_key = ? AND market = ?${activeClause} ORDER BY active DESC, asin`
-  ).bind(ACCOUNT_KEY, market).all();
+  ).bind(accountKey(env), market).all();
   const products = [];
   const nonActiveProducts = [];
   for (const row of result.results) {
@@ -285,7 +297,9 @@ async function catalog(request, env, market, url) {
   return json({
     market,
     site: MARKETS[market].site,
-    source: "WPS AirScript: TVL备货表格-20240914 / 产品清单",
+    source: accountKey(env) === "szty"
+      ? "WPS AirScript: SZTY备货表格-20260428 / 产品清单"
+      : "WPS AirScript: TVL备货表格-20240914 / 产品清单",
     products,
     non_active_products: nonActiveProducts,
   });
@@ -296,12 +310,12 @@ async function getUserState(request, env, market) {
   const products = await env.DB.prepare(
     `SELECT asin, memo, memo_updated_at, focused FROM user_product_state
      WHERE email = ? AND account_key = ? AND market = ?`
-  ).bind(email, ACCOUNT_KEY, market).all();
+  ).bind(email, accountKey(env), market).all();
   const shell = await env.DB.prepare(
     `SELECT phone_brand, model, single_shell, three_in_one, breakthrough
      FROM shell_opportunity_state
      WHERE email = ? AND account_key = ? AND market = ?`
-  ).bind(email, ACCOUNT_KEY, market).all();
+  ).bind(email, accountKey(env), market).all();
   return json({ email, market, products: products.results, shell: shell.results });
 }
 
@@ -313,7 +327,7 @@ async function putUserState(request, env, market) {
   const existing = await env.DB.prepare(
     `SELECT memo, memo_updated_at, focused FROM user_product_state
      WHERE email = ? AND account_key = ? AND market = ? AND asin = ?`
-  ).bind(email, ACCOUNT_KEY, market, asin).first();
+  ).bind(email, accountKey(env), market, asin).first();
   const memo = Object.hasOwn(payload, "memo") ? String(payload.memo || "") : existing?.memo || "";
   const focused = Object.hasOwn(payload, "focused")
     ? Boolean(payload.focused)
@@ -331,7 +345,7 @@ async function putUserState(request, env, market) {
        memo_updated_at = excluded.memo_updated_at,
        focused = excluded.focused,
        updated_at = excluded.updated_at`
-  ).bind(email, ACCOUNT_KEY, market, asin, memo, memoUpdatedAt, focused ? 1 : 0, now).run();
+  ).bind(email, accountKey(env), market, asin, memo, memoUpdatedAt, focused ? 1 : 0, now).run();
   return json({ ok: true, asin, memo, memo_updated_at: memoUpdatedAt, focused });
 }
 
@@ -354,7 +368,7 @@ async function putShellState(request, env, market) {
        updated_at = excluded.updated_at`
   ).bind(
     email,
-    ACCOUNT_KEY,
+    accountKey(env),
     market,
     phoneBrand,
     model,
@@ -390,7 +404,7 @@ async function employeeCompetitors(request, env, market) {
       AND latest.asin = cp.asin AND latest.row_number = 1
      WHERE cp.account_key = ? AND cp.market = ?
      ORDER BY cp.active DESC, cp.benchmark_type, cp.asin`
-  ).bind(ACCOUNT_KEY, market, ACCOUNT_KEY, market).all();
+  ).bind(accountKey(env), market, accountKey(env), market).all();
   const products = result.results.map((row) => {
     const record = safeJson(row.record_json, {}) || {};
     const snapshotPath = row.snapshot_id
@@ -426,7 +440,7 @@ async function addEmployeeCompetitor(request, env, market) {
        AND (json_extract(metadata_json, '$.category') = ?
          OR json_extract(metadata_json, '$.type') = ?)
      LIMIT 1`
-  ).bind(ACCOUNT_KEY, market, benchmarkType, benchmarkType).first();
+  ).bind(accountKey(env), market, benchmarkType, benchmarkType).first();
   if (!ownType) return json({ error: "benchmark_type must match an active own-product type" }, 400);
   const now = new Date().toISOString();
   await env.DB.prepare(
@@ -437,7 +451,7 @@ async function addEmployeeCompetitor(request, env, market) {
        benchmark_type = excluded.benchmark_type,
        active = 1,
        updated_at = excluded.updated_at`
-  ).bind(ACCOUNT_KEY, market, asin, benchmarkType, email, now, now).run();
+  ).bind(accountKey(env), market, asin, benchmarkType, email, now, now).run();
   return json({ ok: true, market, asin, benchmark_type: benchmarkType, active: true });
 }
 
@@ -450,7 +464,7 @@ async function updateEmployeeCompetitor(request, env, market, asinValue) {
   const result = await env.DB.prepare(
     `UPDATE competitor_products SET active = ?, updated_at = ?
      WHERE account_key = ? AND market = ? AND asin = ?`
-  ).bind(payload.active ? 1 : 0, new Date().toISOString(), ACCOUNT_KEY, market, asin).run();
+  ).bind(payload.active ? 1 : 0, new Date().toISOString(), accountKey(env), market, asin).run();
   if (!result.meta.changes) return json({ error: "Competitor not found" }, 404);
   return json({ ok: true, market, asin, active: Boolean(payload.active) });
 }
@@ -463,7 +477,7 @@ async function competitorScreenshot(request, env, market, snapshotId, url) {
     `SELECT asin, screenshot_key, screenshot_content_type
      FROM competitor_snapshots
      WHERE id = ? AND account_key = ? AND market = ?`
-  ).bind(id, ACCOUNT_KEY, market).first();
+  ).bind(id, accountKey(env), market).first();
   if (!row?.screenshot_key) return json({ error: "Screenshot not found" }, 404);
   const object = await env.SCREENSHOTS.get(row.screenshot_key);
   if (!object) return json({ error: "Screenshot object not found" }, 404);
@@ -488,7 +502,7 @@ async function ingestCompetitorList(request, env, url) {
     `SELECT asin, benchmark_type FROM competitor_products
      WHERE account_key = ? AND market = ? AND active = 1
      ORDER BY benchmark_type, asin`
-  ).bind(ACCOUNT_KEY, market).all();
+  ).bind(accountKey(env), market).all();
   return json({ market, products: result.results });
 }
 
@@ -502,7 +516,7 @@ async function ingestCompetitorResult(request, env) {
   const registered = await env.DB.prepare(
     `SELECT benchmark_type FROM competitor_products
      WHERE account_key = ? AND market = ? AND asin = ? AND active = 1`
-  ).bind(ACCOUNT_KEY, market, asin).first();
+  ).bind(accountKey(env), market, asin).first();
   if (!registered) return json({ error: "Active competitor not found" }, 404);
 
   const screenshotBase64 = String(payload.screenshot_base64 || "");
@@ -522,11 +536,11 @@ async function ingestCompetitorResult(request, env) {
   const scrapedAt = String(record.scraped_at || new Date().toISOString());
   const date = scrapedAt.slice(0, 10);
   const stamp = scrapedAt.replace(/[^0-9]/g, "").slice(0, 14) || Date.now();
-  const screenshotKey = `competitors/${market}/${asin}/${date}/${stamp}.jpg`;
+  const screenshotKey = `competitors/${accountKey(env)}/${market}/${asin}/${date}/${stamp}.jpg`;
   const contentType = payload.screenshot_content_type === "image/png" ? "image/png" : "image/jpeg";
   await env.SCREENSHOTS.put(screenshotKey, screenshot, {
     httpMetadata: { contentType },
-    customMetadata: { account: ACCOUNT_KEY, market, asin, scrapedAt },
+    customMetadata: { account: accountKey(env), market, asin, scrapedAt },
   });
   try {
     await env.DB.prepare(
@@ -542,7 +556,7 @@ async function ingestCompetitorResult(request, env) {
          screenshot_key = excluded.screenshot_key,
          screenshot_content_type = excluded.screenshot_content_type`
     ).bind(
-      ACCOUNT_KEY, market, asin, scrapedAt, record.status || null,
+      accountKey(env), market, asin, scrapedAt, record.status || null,
       record.current_price ?? null, record.msrp_price ?? null,
       JSON.stringify({ ...record, category: registered.benchmark_type }),
       screenshotKey, contentType, new Date().toISOString()
@@ -562,7 +576,7 @@ async function cleanupCompetitorSnapshots(request, env, url) {
     `SELECT id, screenshot_key FROM competitor_snapshots
      WHERE account_key = ? AND market = ?
        AND scraped_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-60 days')`
-  ).bind(ACCOUNT_KEY, market).all();
+  ).bind(accountKey(env), market).all();
   const keys = expired.results.map((row) => row.screenshot_key).filter(Boolean);
   for (let index = 0; index < keys.length; index += 1000) {
     await env.SCREENSHOTS.delete(keys.slice(index, index + 1000));
@@ -571,7 +585,7 @@ async function cleanupCompetitorSnapshots(request, env, url) {
     `DELETE FROM competitor_snapshots
      WHERE account_key = ? AND market = ?
        AND scraped_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-60 days')`
-  ).bind(ACCOUNT_KEY, market).run();
+  ).bind(accountKey(env), market).run();
   return json({ ok: true, market, deleted: expired.results.length, retention_days: 60 });
 }
 
@@ -594,7 +608,7 @@ async function handleApi(request, env, url, ctx) {
   }
 
   const competitorScreenshotMatch = url.pathname.match(
-    /^\/api\/market\/(UK|DE|IT|ES)\/competitor-screenshot\/(\d+)$/i
+    /^\/api\/market\/(UK|DE|IT|ES|NL)\/competitor-screenshot\/(\d+)$/i
   );
   if (competitorScreenshotMatch && request.method === "GET") {
     return competitorScreenshot(
@@ -606,7 +620,7 @@ async function handleApi(request, env, url, ctx) {
     );
   }
   const competitorItemMatch = url.pathname.match(
-    /^\/api\/market\/(UK|DE|IT|ES)\/competitors\/([A-Z0-9]{10})$/i
+    /^\/api\/market\/(UK|DE|IT|ES|NL)\/competitors\/([A-Z0-9]{10})$/i
   );
   if (competitorItemMatch && request.method === "PATCH") {
     return updateEmployeeCompetitor(
@@ -614,7 +628,7 @@ async function handleApi(request, env, url, ctx) {
     );
   }
   const competitorListMatch = url.pathname.match(
-    /^\/api\/market\/(UK|DE|IT|ES)\/competitors$/i
+    /^\/api\/market\/(UK|DE|IT|ES|NL)\/competitors$/i
   );
   if (competitorListMatch) {
     const market = marketCode(competitorListMatch[1]);
@@ -623,7 +637,7 @@ async function handleApi(request, env, url, ctx) {
     return json({ error: "Method not allowed" }, 405);
   }
 
-  const match = url.pathname.match(/^\/api\/market\/(UK|DE|IT|ES)\/(latest|history|catalog|state|shell-state)$/i);
+  const match = url.pathname.match(/^\/api\/market\/(UK|DE|IT|ES|NL)\/(latest|history|catalog|state|shell-state)$/i);
   if (!match) return json({ error: "Not found" }, 404);
   const market = marketCode(match[1]);
   const resource = match[2].toLowerCase();
@@ -646,13 +660,13 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.hostname === INGEST_HOST) {
+      if (url.hostname === ingestHost(env)) {
         const isIngestPath = url.pathname === "/api/ingest"
           || url.pathname === "/api/ingest/seed"
           || url.pathname.startsWith("/api/ingest/competitor");
         return isIngestPath ? await handleApi(request, env, url, ctx) : json({ error: "Not found" }, 404);
       }
-      if (url.hostname !== DASHBOARD_HOST && !["localhost", "127.0.0.1"].includes(url.hostname)) {
+      if (url.hostname !== dashboardHost(env) && !["localhost", "127.0.0.1"].includes(url.hostname)) {
         return json({ error: "Not found" }, 404);
       }
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url, ctx);

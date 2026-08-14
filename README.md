@@ -160,6 +160,32 @@ Cloudflare 目录说明：
 
 竞品跟踪按站点独立管理。在对应站点页面选择“对标类型”（选项来自自己的在售产品类型）并录入竞品 ASIN；下一次该站点定时任务会抓取价格、评分、评论、促销等字段并保存完整页面截图。截图不公开，员工可在看板中悬停预览、点击查看或下载。每张完整页面截图会自动压缩到约 1 MB 以内，上传接口也会拒绝超限文件；R2 生命周期和每日清理任务均按 60 天保留。
 
+## SZTY 荷兰站看板
+
+SZTY 使用独立的 WPS 清单、GitHub Actions Secrets、Cloudflare Worker 账户键和员工域名，不会覆盖 TVL 数据：
+
+- 产品清单：`product_list_szty.json`
+- 看板：`https://szty.price.tentoki.online`
+- 内部上传域名：`https://szty-price-ingest.tentoki.online`
+- 每日抓价：UTC 16:20，即北京时间次日 00:20
+- 每周清单同步：每周日 UTC 16:00，即北京时间周一 00:00
+- 观察位置：Amazon.nl 默认 Amsterdam `1079 CK`
+
+SZTY 同步会把 WPS“产品清单”中所有唯一且有效的 ASIN 纳入价格抓取，不按产品状态排除；没有 ASIN 的资料行只保留在非在售资料中。第一版只抓 SZTY 自有产品，不启用竞品跟踪。
+
+GitHub Actions 使用以下独立 Secrets：
+
+- `SZTY_WPS_SCRIPT_WEBHOOK`
+- `SZTY_WPS_AIRSCRIPT_TOKEN`
+- `SZTY_PRICE_MONITOR_INGEST_TOKEN`
+
+对应工作流：
+
+- `.github/workflows/weekly_szty_wps_product_sync.yml`
+- `.github/workflows/daily_szty_nl_price_refresh.yml`
+
+Cloudflare 部署配置位于 `cloudflare/price-monitor/wrangler.szty.jsonc`。D1 表通过 `account_key=szty` 与 TVL 的 `account_key=primary` 隔离，不需要新增数据库表。
+
 ## 从零创建 GitHub 仓库
 
 1. 注册或登录 GitHub。
