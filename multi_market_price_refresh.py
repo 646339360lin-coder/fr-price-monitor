@@ -513,6 +513,8 @@ async def run(args: argparse.Namespace) -> int:
             if str(product.get("asin") or extract_asin(str(product.get("url") or "")) or "").upper()
             == requested_asin
         ]
+    if args.offset:
+        products = products[args.offset :]
     if args.limit:
         products = products[: args.limit]
     if not products:
@@ -662,6 +664,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-delay", type=float, default=1.0)
     parser.add_argument("--max-delay", type=float, default=3.0)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--asin", help="Scrape one specific ASIN for validation")
     parser.add_argument("--skip-location", action="store_true")
     parser.add_argument("--dry-run", action="store_true")

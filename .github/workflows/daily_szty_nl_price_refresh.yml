@@ -18,9 +18,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  refresh:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    outputs:
+      batches: ${{ steps.matrix.outputs.batches }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build batch matrix
+        id: matrix
+        env:
+          REQUESTED_LIMIT: ${{ inputs.limit }}
+        run: |
+          batches=$(python - <<'PY'
+          import json
+          import math
+          import os
+
+          with open("product_list_szty.json", encoding="utf-8") as handle:
+              count = len(json.load(handle).get("products", []))
+          requested = os.environ.get("REQUESTED_LIMIT", "").strip()
+          if requested:
+              count = min(count, int(requested))
+          batch_size = 75
+          print(json.dumps(list(range(max(1, math.ceil(count / batch_size))))))
+          PY
+          )
+          echo "batches=$batches" >> "$GITHUB_OUTPUT"
+
+  refresh:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        batch: ${{ fromJSON(needs.prepare.outputs.batches) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,17 +86,48 @@ jobs:
           PYTHONUNBUFFERED: "1"
           REQUESTED_LIMIT: ${{ inputs.limit }}
         run: |
-          limit_args=()
+          batch_size=75
+          offset=$(( ${{ matrix.batch }} * batch_size ))
+          limit="$batch_size"
           if [ -n "$REQUESTED_LIMIT" ]; then
-            limit_args=(--limit "$REQUESTED_LIMIT")
+            remaining=$(( REQUESTED_LIMIT - offset ))
+            if [ "$remaining" -lt "$limit" ]; then limit="$remaining"; fi
           fi
           python multi_market_price_refresh.py \
             --market NL \
             --product-list product_list_szty.json \
             --retry-failures 1 \
+            --offset "$offset" \
+            --limit "$limit" \
             --latest-output .runtime/szty/nl/price_results_latest.json \
-            --history-output .runtime/szty/nl/price_history.json \
-            "${limit_args[@]}"
+            --history-output .runtime/szty/nl/price_history.json
+
+      - name: Upload batch artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: szty-nl-batch-${{ matrix.batch }}
+          path: .runtime/szty/nl/price_results_latest.json
+          retention-days: 1
+
+  publish:
+    needs: refresh
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all batch artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: szty-nl-batch-*
+          path: .runtime/szty/nl/batches
+
+      - name: Merge batch results
+        run: |
+          python merge_price_batches.py \
+            --market NL \
+            --input-dir .runtime/szty/nl/batches \
+            --output .runtime/szty/nl/price_results_latest.json
 
       - name: Upload results to Cloudflare
         env:
