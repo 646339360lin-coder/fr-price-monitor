@@ -555,9 +555,7 @@ async def run(args: argparse.Namespace) -> int:
             page = await context.new_page()
             context_location_confirmed = args.skip_location
             if not args.skip_location:
-                location = await set_delivery_postcode(
-                    page, postcode, market, normalize_product_url(products[0], market)
-                )
+                location = await set_delivery_postcode(page, postcode, market)
                 context_location_confirmed = location_matches_postcode(
                     location, postcode, market
                 )
@@ -626,7 +624,6 @@ async def run(args: argparse.Namespace) -> int:
                             retry_page,
                             postcode,
                             market,
-                            normalize_product_url(retry_products[0], market),
                         )
                         retry_location_confirmed = location_matches_postcode(
                             location, postcode, market
