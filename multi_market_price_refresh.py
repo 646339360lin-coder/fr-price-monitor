@@ -355,6 +355,7 @@ async def scrape_product(
     product: dict[str, Any],
     market: dict[str, Any],
     postcode: str,
+    context_location_confirmed: bool = False,
 ) -> dict[str, Any]:
     url = normalize_product_url(product, market)
     if not robots_allowed(url):
@@ -365,7 +366,10 @@ async def scrape_product(
         target_url = with_market_language(url, market)
         await navigate_product_page(page, target_url)
         observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
-        if not location_matches_postcode(observer_location, postcode, market):
+        if (
+            not context_location_confirmed
+            and not location_matches_postcode(observer_location, postcode, market)
+        ):
             location_set = await set_delivery_postcode_via_ajax(page, postcode, market)
             location_confirmed_via_api = location_set
             if not location_set:
@@ -441,8 +445,10 @@ async def scrape_product(
     availability = await safe_text(page, "#availability, #outOfStock")
     image_url = await extract_main_image(page)
     observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
-    location_valid = location_confirmed_via_api or location_matches_postcode(
-        observer_location, postcode, market
+    location_valid = (
+        context_location_confirmed
+        or location_confirmed_via_api
+        or location_matches_postcode(observer_location, postcode, market)
     )
     if currency_mismatch or not location_valid:
         current_price = None
@@ -547,9 +553,13 @@ async def run(args: argparse.Namespace) -> int:
             context = await browser.new_context(**context_options)
             await add_market_cookies(context, market)
             page = await context.new_page()
+            context_location_confirmed = args.skip_location
             if not args.skip_location:
                 location = await set_delivery_postcode(
                     page, postcode, market, normalize_product_url(products[0], market)
+                )
+                context_location_confirmed = location_matches_postcode(
+                    location, postcode, market
                 )
                 print(f"{market['site']} delivery location: {location or 'not captured'}")
             for index, product in enumerate(products, start=1):
@@ -564,7 +574,13 @@ async def run(args: argparse.Namespace) -> int:
                 url = normalize_product_url(product, market)
                 print(f"[{index}/{len(products)}] {market['code']} {product.get('brand')} {url}")
                 try:
-                    record = await scrape_product(page, product, market, postcode)
+                    record = await scrape_product(
+                        page,
+                        product,
+                        market,
+                        postcode,
+                        context_location_confirmed=context_location_confirmed,
+                    )
                 except Exception as exc:
                     record = build_error_record(
                         product, url, f"unexpected_error: {exc}", market, postcode
@@ -604,12 +620,16 @@ async def run(args: argparse.Namespace) -> int:
                     retry_context = await retry_browser.new_context(**context_options)
                     await add_market_cookies(retry_context, market)
                     retry_page = await retry_context.new_page()
+                    retry_location_confirmed = args.skip_location
                     if not args.skip_location:
                         location = await set_delivery_postcode(
                             retry_page,
                             postcode,
                             market,
                             normalize_product_url(retry_products[0], market),
+                        )
+                        retry_location_confirmed = location_matches_postcode(
+                            location, postcode, market
                         )
                         print(f"{market['site']} retry location: {location or 'not captured'}")
                     for index, product in enumerate(retry_products, start=1):
@@ -619,7 +639,11 @@ async def run(args: argparse.Namespace) -> int:
                         url = normalize_product_url(product, market)
                         try:
                             retry_record = await scrape_product(
-                                retry_page, product, market, postcode
+                                retry_page,
+                                product,
+                                market,
+                                postcode,
+                                context_location_confirmed=retry_location_confirmed,
                             )
                         except Exception as exc:
                             retry_record = build_error_record(
