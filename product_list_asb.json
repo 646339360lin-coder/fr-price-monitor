@@ -3,7 +3,7 @@
   "market": "NL",
   "site": "Amazon.nl",
   "source": "WPS AirScript: ASB和XND备货表格-20250730 / 产品清单（ASB欧洲产品）",
-  "synced_at": "2026-08-15T16:50:03Z",
+  "synced_at": "2026-08-15T17:09:12Z",
   "schema_version": 1,
   "filter": {
     "product_status": "all",
@@ -46,9 +46,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS1ML2C",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS1ML2C"
     },
     {
       "account_key": "asb",
@@ -74,9 +72,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS2B3DB",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS2B3DB"
     },
     {
       "account_key": "asb",
@@ -102,9 +98,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS225V2",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS225V2"
     },
     {
       "account_key": "asb",
@@ -130,9 +124,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS1PLQ1",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS1PLQ1"
     },
     {
       "account_key": "asb",
@@ -158,9 +150,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRYWGFY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRYWGFY"
     },
     {
       "account_key": "asb",
@@ -186,9 +176,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZWJ1V",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZWJ1V"
     },
     {
       "account_key": "asb",
@@ -214,9 +202,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZQ4CH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZQ4CH"
     },
     {
       "account_key": "asb",
@@ -242,9 +228,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZ9MQS",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZ9MQS"
     },
     {
       "account_key": "asb",
@@ -270,9 +254,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZLVS4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZLVS4"
     },
     {
       "account_key": "asb",
@@ -298,9 +280,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS27LRP",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS27LRP"
     },
     {
       "account_key": "asb",
@@ -326,9 +306,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS1VY7L",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS1VY7L"
     },
     {
       "account_key": "asb",
@@ -354,9 +332,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZKVW2",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZKVW2"
     },
     {
       "account_key": "asb",
@@ -382,9 +358,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRYF5PC",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRYF5PC"
     },
     {
       "account_key": "asb",
@@ -410,9 +384,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS1BD72",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS1BD72"
     },
     {
       "account_key": "asb",
@@ -438,9 +410,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS385ZN",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS385ZN"
     },
     {
       "account_key": "asb",
@@ -466,9 +436,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRYSYNJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRYSYNJ"
     },
     {
       "account_key": "asb",
@@ -494,9 +462,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZK38J",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZK38J"
     },
     {
       "account_key": "asb",
@@ -522,9 +488,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS1G4H1",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS1G4H1"
     },
     {
       "account_key": "asb",
@@ -550,9 +514,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZDYCY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZDYCY"
     },
     {
       "account_key": "asb",
@@ -578,9 +540,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRML9Z9",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRML9Z9"
     },
     {
       "account_key": "asb",
@@ -606,9 +566,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWR22P5Y",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWR22P5Y"
     },
     {
       "account_key": "asb",
@@ -634,9 +592,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWR2SHX8",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWR2SHX8"
     },
     {
       "account_key": "asb",
@@ -662,9 +618,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWQZSQFR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWQZSQFR"
     },
     {
       "account_key": "asb",
@@ -690,9 +644,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWR4WLBX",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWR4WLBX"
     },
     {
       "account_key": "asb",
@@ -718,9 +670,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWR7XYBZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWR7XYBZ"
     },
     {
       "account_key": "asb",
@@ -746,9 +696,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS16Q2H",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS16Q2H"
     },
     {
       "account_key": "asb",
@@ -774,9 +722,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS2Z55X",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS2Z55X"
     },
     {
       "account_key": "asb",
@@ -802,9 +748,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS13X6V",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS13X6V"
     },
     {
       "account_key": "asb",
@@ -830,9 +774,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZS5YC",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZS5YC"
     },
     {
       "account_key": "asb",
@@ -858,9 +800,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS1X4N7",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS1X4N7"
     },
     {
       "account_key": "asb",
@@ -886,9 +826,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS1TVQH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS1TVQH"
     },
     {
       "account_key": "asb",
@@ -914,9 +852,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS2SB5N",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS2SB5N"
     },
     {
       "account_key": "asb",
@@ -942,9 +878,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS272X9",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS272X9"
     },
     {
       "account_key": "asb",
@@ -970,9 +904,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRYPDL5",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRYPDL5"
     },
     {
       "account_key": "asb",
@@ -998,9 +930,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZK545",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZK545"
     },
     {
       "account_key": "asb",
@@ -1026,9 +956,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS3HNT7",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS3HNT7"
     },
     {
       "account_key": "asb",
@@ -1054,9 +982,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS16YDS",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS16YDS"
     },
     {
       "account_key": "asb",
@@ -1082,9 +1008,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZL61M",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZL61M"
     },
     {
       "account_key": "asb",
@@ -1110,9 +1034,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZL75M",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZL75M"
     },
     {
       "account_key": "asb",
@@ -1138,9 +1060,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS23FTZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS23FTZ"
     },
     {
       "account_key": "asb",
@@ -1166,9 +1086,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZLMM4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZLMM4"
     },
     {
       "account_key": "asb",
@@ -1194,9 +1112,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZCMDH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZCMDH"
     },
     {
       "account_key": "asb",
@@ -1222,9 +1138,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS344ND",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS344ND"
     },
     {
       "account_key": "asb",
@@ -1250,9 +1164,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS144TF",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS144TF"
     },
     {
       "account_key": "asb",
@@ -1278,9 +1190,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZ9CFR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZ9CFR"
     },
     {
       "account_key": "asb",
@@ -1306,9 +1216,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZGCDH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZGCDH"
     },
     {
       "account_key": "asb",
@@ -1334,9 +1242,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS18X4G",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS18X4G"
     },
     {
       "account_key": "asb",
@@ -1362,9 +1268,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWRZV2T6",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWRZV2T6"
     },
     {
       "account_key": "asb",
@@ -1390,9 +1294,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS14HWC",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS14HWC"
     },
     {
       "account_key": "asb",
@@ -1418,9 +1320,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0CWS26YWH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0CWS26YWH"
     },
     {
       "account_key": "asb",
@@ -1446,9 +1346,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVYH8Q7",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVYH8Q7"
     },
     {
       "account_key": "asb",
@@ -1474,9 +1372,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVYB1XY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVYB1XY"
     },
     {
       "account_key": "asb",
@@ -1502,9 +1398,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVX2BLV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVX2BLV"
     },
     {
       "account_key": "asb",
@@ -1530,9 +1424,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVY14VM",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVY14VM"
     },
     {
       "account_key": "asb",
@@ -1558,9 +1450,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVZDFKK",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVZDFKK"
     },
     {
       "account_key": "asb",
@@ -1586,9 +1476,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVYK4WW",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVYK4WW"
     },
     {
       "account_key": "asb",
@@ -1614,9 +1502,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVY8ZRR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVY8ZRR"
     },
     {
       "account_key": "asb",
@@ -1642,9 +1528,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXNL5J",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXNL5J"
     },
     {
       "account_key": "asb",
@@ -1670,9 +1554,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXW3K3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXW3K3"
     },
     {
       "account_key": "asb",
@@ -1698,9 +1580,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXVXTR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXVXTR"
     },
     {
       "account_key": "asb",
@@ -1726,9 +1606,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXXG66",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXXG66"
     },
     {
       "account_key": "asb",
@@ -1754,9 +1632,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHW1TFZ9",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHW1TFZ9"
     },
     {
       "account_key": "asb",
@@ -1782,9 +1658,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVY2BP8",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVY2BP8"
     },
     {
       "account_key": "asb",
@@ -1810,9 +1684,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVY83TH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVY83TH"
     },
     {
       "account_key": "asb",
@@ -1838,9 +1710,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXTXLX",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXTXLX"
     },
     {
       "account_key": "asb",
@@ -1866,9 +1736,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVWDK22",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVWDK22"
     },
     {
       "account_key": "asb",
@@ -1894,9 +1762,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXWJ33",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXWJ33"
     },
     {
       "account_key": "asb",
@@ -1922,9 +1788,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXXGKY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXXGKY"
     },
     {
       "account_key": "asb",
@@ -1950,9 +1814,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVXDZF1",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVXDZF1"
     },
     {
       "account_key": "asb",
@@ -1978,9 +1840,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHVWQLJ8",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHVWQLJ8"
     },
     {
       "account_key": "asb",
@@ -2006,9 +1866,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHC4FQ8",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHC4FQ8"
     },
     {
       "account_key": "asb",
@@ -2034,9 +1892,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD15ZP",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD15ZP"
     },
     {
       "account_key": "asb",
@@ -2062,9 +1918,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCWWSR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCWWSR"
     },
     {
       "account_key": "asb",
@@ -2090,9 +1944,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHB9R2G",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHB9R2G"
     },
     {
       "account_key": "asb",
@@ -2118,9 +1970,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBF3PY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBF3PY"
     },
     {
       "account_key": "asb",
@@ -2146,9 +1996,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCCNPP",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCCNPP"
     },
     {
       "account_key": "asb",
@@ -2174,9 +2022,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH96B67",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH96B67"
     },
     {
       "account_key": "asb",
@@ -2202,9 +2048,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDWFF9",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDWFF9"
     },
     {
       "account_key": "asb",
@@ -2230,9 +2074,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9NW11",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9NW11"
     },
     {
       "account_key": "asb",
@@ -2258,9 +2100,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDR7R4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDR7R4"
     },
     {
       "account_key": "asb",
@@ -2286,9 +2126,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9RYDY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9RYDY"
     },
     {
       "account_key": "asb",
@@ -2314,9 +2152,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDHFHZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDHFHZ"
     },
     {
       "account_key": "asb",
@@ -2342,9 +2178,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDRGLB",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDRGLB"
     },
     {
       "account_key": "asb",
@@ -2370,9 +2204,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBP884",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBP884"
     },
     {
       "account_key": "asb",
@@ -2398,9 +2230,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCP755",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCP755"
     },
     {
       "account_key": "asb",
@@ -2426,9 +2256,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHGC5YZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHGC5YZ"
     },
     {
       "account_key": "asb",
@@ -2454,9 +2282,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHG3DBK",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHG3DBK"
     },
     {
       "account_key": "asb",
@@ -2482,9 +2308,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9W4T3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9W4T3"
     },
     {
       "account_key": "asb",
@@ -2510,9 +2334,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHGW61Q",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHGW61Q"
     },
     {
       "account_key": "asb",
@@ -2538,9 +2360,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFTQGY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFTQGY"
     },
     {
       "account_key": "asb",
@@ -2566,9 +2386,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF9JPZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF9JPZ"
     },
     {
       "account_key": "asb",
@@ -2594,9 +2412,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBJ6SV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBJ6SV"
     },
     {
       "account_key": "asb",
@@ -2622,9 +2438,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHB3SYX",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHB3SYX"
     },
     {
       "account_key": "asb",
@@ -2650,9 +2464,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCS6BJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCS6BJ"
     },
     {
       "account_key": "asb",
@@ -2678,9 +2490,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCFH15",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCFH15"
     },
     {
       "account_key": "asb",
@@ -2706,9 +2516,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHGHG3S",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHGHG3S"
     },
     {
       "account_key": "asb",
@@ -2734,9 +2542,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9J26V",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9J26V"
     },
     {
       "account_key": "asb",
@@ -2762,9 +2568,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCXQN9",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCXQN9"
     },
     {
       "account_key": "asb",
@@ -2790,9 +2594,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9L26V",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9L26V"
     },
     {
       "account_key": "asb",
@@ -2818,9 +2620,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF75BM",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF75BM"
     },
     {
       "account_key": "asb",
@@ -2846,9 +2646,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFW3ZH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFW3ZH"
     },
     {
       "account_key": "asb",
@@ -2874,9 +2672,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD3NNJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD3NNJ"
     },
     {
       "account_key": "asb",
@@ -2902,9 +2698,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHC4R4X",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHC4R4X"
     },
     {
       "account_key": "asb",
@@ -2930,9 +2724,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCY7YV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCY7YV"
     },
     {
       "account_key": "asb",
@@ -2958,9 +2750,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9C8ZL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9C8ZL"
     },
     {
       "account_key": "asb",
@@ -2986,9 +2776,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDJRC4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDJRC4"
     },
     {
       "account_key": "asb",
@@ -3014,9 +2802,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDVFM5",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDVFM5"
     },
     {
       "account_key": "asb",
@@ -3042,9 +2828,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFMX7F",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFMX7F"
     },
     {
       "account_key": "asb",
@@ -3070,9 +2854,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD3M7J",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD3M7J"
     },
     {
       "account_key": "asb",
@@ -3098,9 +2880,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCKCPQ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCKCPQ"
     },
     {
       "account_key": "asb",
@@ -3126,9 +2906,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHC522B",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHC522B"
     },
     {
       "account_key": "asb",
@@ -3154,9 +2932,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCBZB1",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCBZB1"
     },
     {
       "account_key": "asb",
@@ -3182,9 +2958,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHC6LTH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHC6LTH"
     },
     {
       "account_key": "asb",
@@ -3210,9 +2984,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFV88M",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFV88M"
     },
     {
       "account_key": "asb",
@@ -3238,9 +3010,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCCXGP",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCCXGP"
     },
     {
       "account_key": "asb",
@@ -3266,9 +3036,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD9KKJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD9KKJ"
     },
     {
       "account_key": "asb",
@@ -3294,9 +3062,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCHXCK",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCHXCK"
     },
     {
       "account_key": "asb",
@@ -3322,9 +3088,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF466M",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF466M"
     },
     {
       "account_key": "asb",
@@ -3350,9 +3114,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCFDLN",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCFDLN"
     },
     {
       "account_key": "asb",
@@ -3378,9 +3140,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDK6ZL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDK6ZL"
     },
     {
       "account_key": "asb",
@@ -3406,9 +3166,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDG565",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDG565"
     },
     {
       "account_key": "asb",
@@ -3434,9 +3192,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFMKTZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFMKTZ"
     },
     {
       "account_key": "asb",
@@ -3462,9 +3218,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF3M7Z",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF3M7Z"
     },
     {
       "account_key": "asb",
@@ -3490,9 +3244,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF583L",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF583L"
     },
     {
       "account_key": "asb",
@@ -3518,9 +3270,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD786M",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD786M"
     },
     {
       "account_key": "asb",
@@ -3546,9 +3296,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBY38T",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBY38T"
     },
     {
       "account_key": "asb",
@@ -3574,9 +3322,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBM2LR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBM2LR"
     },
     {
       "account_key": "asb",
@@ -3602,9 +3348,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFNXM3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFNXM3"
     },
     {
       "account_key": "asb",
@@ -3630,9 +3374,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9BYLG",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9BYLG"
     },
     {
       "account_key": "asb",
@@ -3658,9 +3400,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBT2LW",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBT2LW"
     },
     {
       "account_key": "asb",
@@ -3686,9 +3426,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCCXHZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCCXHZ"
     },
     {
       "account_key": "asb",
@@ -3714,9 +3452,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBHFHD",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBHFHD"
     },
     {
       "account_key": "asb",
@@ -3742,9 +3478,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHC8Q2B",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHC8Q2B"
     },
     {
       "account_key": "asb",
@@ -3770,9 +3504,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD78LZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD78LZ"
     },
     {
       "account_key": "asb",
@@ -3798,9 +3530,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDJ3Q4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDJ3Q4"
     },
     {
       "account_key": "asb",
@@ -3826,9 +3556,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHB934N",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHB934N"
     },
     {
       "account_key": "asb",
@@ -3854,9 +3582,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9PPR5",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9PPR5"
     },
     {
       "account_key": "asb",
@@ -3882,9 +3608,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHC5677",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHC5677"
     },
     {
       "account_key": "asb",
@@ -3910,9 +3634,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9PPQV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9PPQV"
     },
     {
       "account_key": "asb",
@@ -3938,9 +3660,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBDW69",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBDW69"
     },
     {
       "account_key": "asb",
@@ -3966,9 +3686,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDJRC1",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDJRC1"
     },
     {
       "account_key": "asb",
@@ -3994,9 +3712,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBMJH6",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBMJH6"
     },
     {
       "account_key": "asb",
@@ -4022,9 +3738,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDWHTT",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDWHTT"
     },
     {
       "account_key": "asb",
@@ -4050,9 +3764,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCPYTR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCPYTR"
     },
     {
       "account_key": "asb",
@@ -4078,9 +3790,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCZ9VL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCZ9VL"
     },
     {
       "account_key": "asb",
@@ -4106,9 +3816,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF6754",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF6754"
     },
     {
       "account_key": "asb",
@@ -4134,9 +3842,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDHXHX",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDHXHX"
     },
     {
       "account_key": "asb",
@@ -4162,9 +3868,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF9TJ4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF9TJ4"
     },
     {
       "account_key": "asb",
@@ -4190,9 +3894,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBMKMM",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBMKMM"
     },
     {
       "account_key": "asb",
@@ -4218,9 +3920,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCQXZJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCQXZJ"
     },
     {
       "account_key": "asb",
@@ -4246,9 +3946,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBPK7K",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBPK7K"
     },
     {
       "account_key": "asb",
@@ -4274,9 +3972,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHC3QCY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHC3QCY"
     },
     {
       "account_key": "asb",
@@ -4302,9 +3998,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD7YTJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD7YTJ"
     },
     {
       "account_key": "asb",
@@ -4330,9 +4024,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBVSG2",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBVSG2"
     },
     {
       "account_key": "asb",
@@ -4358,9 +4050,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBQ62R",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBQ62R"
     },
     {
       "account_key": "asb",
@@ -4386,9 +4076,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDQJV7",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDQJV7"
     },
     {
       "account_key": "asb",
@@ -4414,9 +4102,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9PPQH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9PPQH"
     },
     {
       "account_key": "asb",
@@ -4442,9 +4128,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHGFHZ6",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHGFHZ6"
     },
     {
       "account_key": "asb",
@@ -4470,9 +4154,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCS94X",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCS94X"
     },
     {
       "account_key": "asb",
@@ -4498,9 +4180,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9VVV5",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9VVV5"
     },
     {
       "account_key": "asb",
@@ -4526,9 +4206,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBHF3S",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBHF3S"
     },
     {
       "account_key": "asb",
@@ -4554,9 +4232,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFXVPX",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFXVPX"
     },
     {
       "account_key": "asb",
@@ -4582,9 +4258,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCQXYS",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCQXYS"
     },
     {
       "account_key": "asb",
@@ -4610,9 +4284,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCM469",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCM469"
     },
     {
       "account_key": "asb",
@@ -4638,9 +4310,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBV52D",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBV52D"
     },
     {
       "account_key": "asb",
@@ -4666,9 +4336,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBKJQD",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBKJQD"
     },
     {
       "account_key": "asb",
@@ -4694,9 +4362,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDXBSS",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDXBSS"
     },
     {
       "account_key": "asb",
@@ -4722,9 +4388,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBQ7W4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBQ7W4"
     },
     {
       "account_key": "asb",
@@ -4750,9 +4414,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCQSDX",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCQSDX"
     },
     {
       "account_key": "asb",
@@ -4778,9 +4440,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHBCCLZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHBCCLZ"
     },
     {
       "account_key": "asb",
@@ -4806,9 +4466,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCMDGJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCMDGJ"
     },
     {
       "account_key": "asb",
@@ -4834,9 +4492,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD3M8Y",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD3M8Y"
     },
     {
       "account_key": "asb",
@@ -4862,9 +4518,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFWHXJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFWHXJ"
     },
     {
       "account_key": "asb",
@@ -4890,9 +4544,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHG3LMZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHG3LMZ"
     },
     {
       "account_key": "asb",
@@ -4918,9 +4570,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9N91J",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9N91J"
     },
     {
       "account_key": "asb",
@@ -4946,9 +4596,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDDQ26",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDDQ26"
     },
     {
       "account_key": "asb",
@@ -4974,9 +4622,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCG1ZZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCG1ZZ"
     },
     {
       "account_key": "asb",
@@ -5002,9 +4648,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF1QJP",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF1QJP"
     },
     {
       "account_key": "asb",
@@ -5030,9 +4674,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCS94F",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCS94F"
     },
     {
       "account_key": "asb",
@@ -5058,9 +4700,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCYD5X",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCYD5X"
     },
     {
       "account_key": "asb",
@@ -5086,9 +4726,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD76Y3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD76Y3"
     },
     {
       "account_key": "asb",
@@ -5114,9 +4752,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHD39K4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHD39K4"
     },
     {
       "account_key": "asb",
@@ -5142,9 +4778,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDHM3F",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDHM3F"
     },
     {
       "account_key": "asb",
@@ -5170,9 +4804,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF7T34",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF7T34"
     },
     {
       "account_key": "asb",
@@ -5198,9 +4830,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDGTL2",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDGTL2"
     },
     {
       "account_key": "asb",
@@ -5226,9 +4856,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHGQ7JX",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHGQ7JX"
     },
     {
       "account_key": "asb",
@@ -5254,9 +4882,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHFM497",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHFM497"
     },
     {
       "account_key": "asb",
@@ -5282,9 +4908,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHF9ZM3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHF9ZM3"
     },
     {
       "account_key": "asb",
@@ -5310,9 +4934,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDT9RG",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDT9RG"
     },
     {
       "account_key": "asb",
@@ -5338,9 +4960,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHG1FTG",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHG1FTG"
     },
     {
       "account_key": "asb",
@@ -5366,9 +4986,7 @@
       "spec": "黑",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDVL7P",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDVL7P"
     },
     {
       "account_key": "asb",
@@ -5394,9 +5012,7 @@
       "spec": "红",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9M3XZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9M3XZ"
     },
     {
       "account_key": "asb",
@@ -5422,9 +5038,7 @@
       "spec": "蓝",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHDLMGN",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHDLMGN"
     },
     {
       "account_key": "asb",
@@ -5450,9 +5064,7 @@
       "spec": "粉",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHB4XDS",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHB4XDS"
     },
     {
       "account_key": "asb",
@@ -5478,9 +5090,7 @@
       "spec": "绿",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCFY5V",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCFY5V"
     },
     {
       "account_key": "asb",
@@ -5506,9 +5116,7 @@
       "spec": "灰",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHH9PS2Q",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHH9PS2Q"
     },
     {
       "account_key": "asb",
@@ -5534,9 +5142,7 @@
       "spec": "紫",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHB39YS",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHB39YS"
     },
     {
       "account_key": "asb",
@@ -5562,9 +5168,7 @@
       "spec": "白",
       "style": "客全",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0DHHCY7DY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0DHHCY7DY"
     },
     {
       "account_key": "asb",
@@ -5590,9 +5194,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B971CZQM",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B971CZQM"
     },
     {
       "account_key": "asb",
@@ -5618,9 +5220,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B96ZTMZL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B96ZTMZL"
     },
     {
       "account_key": "asb",
@@ -5646,9 +5246,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B96X4X1Y",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B96X4X1Y"
     },
     {
       "account_key": "asb",
@@ -5674,9 +5272,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B9714H24",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B9714H24"
     },
     {
       "account_key": "asb",
@@ -5702,9 +5298,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B3XR21RS",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B3XR21RS"
     },
     {
       "account_key": "asb",
@@ -5730,9 +5324,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B3XQWLT6",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B3XQWLT6"
     },
     {
       "account_key": "asb",
@@ -5758,9 +5350,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B3XP743V",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B3XP743V"
     },
     {
       "account_key": "asb",
@@ -5786,9 +5376,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B0B28X4S83",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0B28X4S83"
     },
     {
       "account_key": "asb",
@@ -5814,9 +5402,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B09YYD8M2S",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B09YYD8M2S"
     },
     {
       "account_key": "asb",
@@ -5842,9 +5428,7 @@
       "spec": "",
       "style": "裸片",
       "type": "裸片",
-      "url": "https://www.amazon.nl/dp/B09YYGGYJT",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B09YYGGYJT"
     },
     {
       "account_key": "asb",
@@ -5870,9 +5454,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLGH9JQ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLGH9JQ"
     },
     {
       "account_key": "asb",
@@ -5898,9 +5480,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLBSZ9S",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLBSZ9S"
     },
     {
       "account_key": "asb",
@@ -5926,9 +5506,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLGFXZQ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLGFXZQ"
     },
     {
       "account_key": "asb",
@@ -5954,9 +5532,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLFX966",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLFX966"
     },
     {
       "account_key": "asb",
@@ -5982,9 +5558,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLF1CSQ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLF1CSQ"
     },
     {
       "account_key": "asb",
@@ -6010,9 +5584,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLF6MQK",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLF6MQK"
     },
     {
       "account_key": "asb",
@@ -6038,9 +5610,7 @@
       "spec": "橙",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLH55QQ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLH55QQ"
     },
     {
       "account_key": "asb",
@@ -6066,9 +5636,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLBH2RL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLBH2RL"
     },
     {
       "account_key": "asb",
@@ -6094,9 +5662,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLG21G4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLG21G4"
     },
     {
       "account_key": "asb",
@@ -6122,9 +5688,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLCBYCV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLCBYCV"
     },
     {
       "account_key": "asb",
@@ -6150,9 +5714,7 @@
       "spec": "橙",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0FSLC5FC3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0FSLC5FC3"
     },
     {
       "account_key": "asb",
@@ -6178,9 +5740,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYB5LQ9",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYB5LQ9"
     },
     {
       "account_key": "asb",
@@ -6206,9 +5766,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYBWNSM",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYBWNSM"
     },
     {
       "account_key": "asb",
@@ -6234,9 +5792,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY16H74",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY16H74"
     },
     {
       "account_key": "asb",
@@ -6262,9 +5818,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY196NC",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY196NC"
     },
     {
       "account_key": "asb",
@@ -6290,9 +5844,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYK61DL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYK61DL"
     },
     {
       "account_key": "asb",
@@ -6318,9 +5870,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY98LT5",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY98LT5"
     },
     {
       "account_key": "asb",
@@ -6346,9 +5896,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYD4D4K",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYD4D4K"
     },
     {
       "account_key": "asb",
@@ -6374,9 +5922,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY96Q3W",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY96Q3W"
     },
     {
       "account_key": "asb",
@@ -6402,9 +5948,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY8F8HN",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY8F8HN"
     },
     {
       "account_key": "asb",
@@ -6430,9 +5974,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY3ZNZK",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY3ZNZK"
     },
     {
       "account_key": "asb",
@@ -6458,9 +6000,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYCCWQW",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYCCWQW"
     },
     {
       "account_key": "asb",
@@ -6486,9 +6026,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYBGQPV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYBGQPV"
     },
     {
       "account_key": "asb",
@@ -6514,9 +6052,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY8WDT6",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY8WDT6"
     },
     {
       "account_key": "asb",
@@ -6542,9 +6078,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYBP6NN",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYBP6NN"
     },
     {
       "account_key": "asb",
@@ -6570,9 +6104,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYKDMDK",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYKDMDK"
     },
     {
       "account_key": "asb",
@@ -6598,9 +6130,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY4WM23",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY4WM23"
     },
     {
       "account_key": "asb",
@@ -6626,9 +6156,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHYC2978",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHYC2978"
     },
     {
       "account_key": "asb",
@@ -6654,9 +6182,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY4F7KV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY4F7KV"
     },
     {
       "account_key": "asb",
@@ -6682,9 +6208,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY5T2MK",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY5T2MK"
     },
     {
       "account_key": "asb",
@@ -6710,9 +6234,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GHY19PB4",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GHY19PB4"
     },
     {
       "account_key": "asb",
@@ -6738,9 +6260,7 @@
       "spec": "黑",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6M952G",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6M952G"
     },
     {
       "account_key": "asb",
@@ -6766,9 +6286,7 @@
       "spec": "灰",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK69YR5K",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK69YR5K"
     },
     {
       "account_key": "asb",
@@ -6794,9 +6312,7 @@
       "spec": "蓝",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6P81DH",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6P81DH"
     },
     {
       "account_key": "asb",
@@ -6822,9 +6338,7 @@
       "spec": "紫",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6M1MPL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6M1MPL"
     },
     {
       "account_key": "asb",
@@ -6850,9 +6364,7 @@
       "spec": "粉",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK694RSZ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK694RSZ"
     },
     {
       "account_key": "asb",
@@ -6878,9 +6390,7 @@
       "spec": "黑",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6RK9DG",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6RK9DG"
     },
     {
       "account_key": "asb",
@@ -6906,9 +6416,7 @@
       "spec": "灰",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK64SFWQ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK64SFWQ"
     },
     {
       "account_key": "asb",
@@ -6934,9 +6442,7 @@
       "spec": "蓝",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6HD4T6",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6HD4T6"
     },
     {
       "account_key": "asb",
@@ -6962,9 +6468,7 @@
       "spec": "紫",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK75D1BW",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK75D1BW"
     },
     {
       "account_key": "asb",
@@ -6990,9 +6494,7 @@
       "spec": "粉",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK5JGGB2",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK5JGGB2"
     },
     {
       "account_key": "asb",
@@ -7018,9 +6520,7 @@
       "spec": "黑",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6BJD7G",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6BJD7G"
     },
     {
       "account_key": "asb",
@@ -7046,9 +6546,7 @@
       "spec": "灰",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6HH543",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6HH543"
     },
     {
       "account_key": "asb",
@@ -7074,9 +6572,7 @@
       "spec": "蓝",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK62698R",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK62698R"
     },
     {
       "account_key": "asb",
@@ -7102,9 +6598,7 @@
       "spec": "紫",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6WKL74",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6WKL74"
     },
     {
       "account_key": "asb",
@@ -7130,9 +6624,7 @@
       "spec": "粉",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK71WD8L",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK71WD8L"
     },
     {
       "account_key": "asb",
@@ -7158,9 +6650,7 @@
       "spec": "橙",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6KV34B",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6KV34B"
     },
     {
       "account_key": "asb",
@@ -7186,9 +6676,7 @@
       "spec": "黑",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK615SJB",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK615SJB"
     },
     {
       "account_key": "asb",
@@ -7214,9 +6702,7 @@
       "spec": "灰",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6B55FB",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6B55FB"
     },
     {
       "account_key": "asb",
@@ -7242,9 +6728,7 @@
       "spec": "蓝",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6L6JBR",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6L6JBR"
     },
     {
       "account_key": "asb",
@@ -7270,9 +6754,7 @@
       "spec": "紫",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK75DQ3S",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK75DQ3S"
     },
     {
       "account_key": "asb",
@@ -7298,9 +6780,7 @@
       "spec": "粉",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK6PGMBL",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK6PGMBL"
     },
     {
       "account_key": "asb",
@@ -7326,9 +6806,7 @@
       "spec": "橙",
       "style": "丰尚",
       "type": "肤感壳",
-      "url": "https://www.amazon.nl/dp/B0GK74V949",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GK74V949"
     },
     {
       "account_key": "asb",
@@ -7354,9 +6832,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYYJXQ8",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYYJXQ8"
     },
     {
       "account_key": "asb",
@@ -7382,9 +6858,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYKZDM3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYKZDM3"
     },
     {
       "account_key": "asb",
@@ -7410,9 +6884,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYS92Z5",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYS92Z5"
     },
     {
       "account_key": "asb",
@@ -7438,9 +6910,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYLXKS2",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYLXKS2"
     },
     {
       "account_key": "asb",
@@ -7466,9 +6936,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYLK6PY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYLK6PY"
     },
     {
       "account_key": "asb",
@@ -7494,9 +6962,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYFL3TJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYFL3TJ"
     },
     {
       "account_key": "asb",
@@ -7522,9 +6988,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYJ2PGG",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYJ2PGG"
     },
     {
       "account_key": "asb",
@@ -7550,9 +7014,7 @@
       "spec": "粉",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYKR6BV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYKR6BV"
     },
     {
       "account_key": "asb",
@@ -7578,9 +7040,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYZB5BQP",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYZB5BQP"
     },
     {
       "account_key": "asb",
@@ -7606,9 +7066,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYYL46QY",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYYL46QY"
     },
     {
       "account_key": "asb",
@@ -7634,9 +7092,7 @@
       "spec": "蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0GYZ2Z9B3",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0GYZ2Z9B3"
     },
     {
       "account_key": "asb",
@@ -7662,9 +7118,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTL84M7",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTL84M7"
     },
     {
       "account_key": "asb",
@@ -7690,9 +7144,7 @@
       "spec": "浅蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTR14S8",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTR14S8"
     },
     {
       "account_key": "asb",
@@ -7718,9 +7170,7 @@
       "spec": "樱桃红",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTL73QM",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTL73QM"
     },
     {
       "account_key": "asb",
@@ -7746,9 +7196,7 @@
       "spec": "灰",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTD29Y5",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTD29Y5"
     },
     {
       "account_key": "asb",
@@ -7774,9 +7222,7 @@
       "spec": "浅蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTFL1KJ",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTFL1KJ"
     },
     {
       "account_key": "asb",
@@ -7802,9 +7248,7 @@
       "spec": "樱桃红",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTJ9PWN",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTJ9PWN"
     },
     {
       "account_key": "asb",
@@ -7830,9 +7274,7 @@
       "spec": "黑",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTLGDPD",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTLGDPD"
     },
     {
       "account_key": "asb",
@@ -7858,9 +7300,7 @@
       "spec": "绿",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTGF1GV",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTGF1GV"
     },
     {
       "account_key": "asb",
@@ -7886,9 +7326,7 @@
       "spec": "紫蓝",
       "style": "德甲",
       "type": "机甲壳",
-      "url": "https://www.amazon.nl/dp/B0HDTSXR7M",
-      "market": "NL",
-      "site": "Amazon.nl"
+      "url": "https://www.amazon.com/dp/B0HDTSXR7M"
     }
   ],
   "non_active_products": []
