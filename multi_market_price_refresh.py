@@ -596,6 +596,17 @@ async def run(args: argparse.Namespace) -> int:
                         "postcode verification failures",
                         file=sys.stderr,
                     )
+                    for skipped_product in products[index:]:
+                        skipped_url = normalize_product_url(skipped_product, market)
+                        results.append(
+                            build_error_record(
+                                skipped_product,
+                                skipped_url,
+                                "aborted_after_location_failures",
+                                market,
+                                postcode,
+                            )
+                        )
                     break
                 if index < len(products):
                     await asyncio.sleep(random.uniform(args.min_delay, args.max_delay))
