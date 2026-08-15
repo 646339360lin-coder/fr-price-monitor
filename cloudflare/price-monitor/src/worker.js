@@ -18,6 +18,15 @@ function ingestHost(env) {
   return String(env.INGEST_HOST || "price-ingest.tentoki.online").trim().toLowerCase();
 }
 
+function catalogSource(env) {
+  return String(
+    env.CATALOG_SOURCE
+      || (accountKey(env) === "szty"
+        ? "WPS AirScript: SZTY备货表格-20260428 / 产品清单"
+        : "WPS AirScript: TVL备货表格-20240914 / 产品清单")
+  ).trim();
+}
+
 function json(data, status = 200, cacheControl = "no-store") {
   return Response.json(data, {
     status,
@@ -297,9 +306,7 @@ async function catalog(request, env, market, url) {
   return json({
     market,
     site: MARKETS[market].site,
-    source: accountKey(env) === "szty"
-      ? "WPS AirScript: SZTY备货表格-20260428 / 产品清单"
-      : "WPS AirScript: TVL备货表格-20240914 / 产品清单",
+    source: catalogSource(env),
     products,
     non_active_products: nonActiveProducts,
   });

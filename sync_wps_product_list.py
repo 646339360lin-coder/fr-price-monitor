@@ -134,6 +134,11 @@ def parse_args() -> Any:
         action="store_true",
         help="Include every WPS row with a valid ASIN and product URL",
     )
+    parser.add_argument(
+        "--isku-prefix",
+        default="",
+        help="Only keep rows whose iSKU begins with this account prefix",
+    )
     return parser.parse_args()
 
 
@@ -179,6 +184,25 @@ def include_all_valid_asins(
     return products, remaining
 
 
+def filter_by_isku_prefix(
+    products: list[dict[str, Any]],
+    non_active: list[dict[str, Any]],
+    prefix: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    normalized = prefix.strip().upper()
+    if not normalized:
+        return products, non_active
+
+    def belongs_to_account(item: dict[str, Any]) -> bool:
+        return str(item.get("isku") or "").strip().upper().startswith(normalized)
+
+    filtered_products = [item for item in products if belongs_to_account(item)]
+    filtered_non_active = [item for item in non_active if belongs_to_account(item)]
+    if not filtered_products:
+        raise RuntimeError(f"WPS result contains no products with iSKU prefix {normalized}")
+    return filtered_products, filtered_non_active
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -191,6 +215,11 @@ def main() -> int:
         )
         if args.include_all_valid_asins:
             products, non_active = include_all_valid_asins(products, non_active)
+        products, non_active = filter_by_isku_prefix(
+            products,
+            non_active,
+            args.isku_prefix,
+        )
         payload = build_payload(
             result,
             products,
@@ -202,6 +231,8 @@ def main() -> int:
         payload["filter"]["product_status"].extend(args.additional_active_status)
         if args.include_all_valid_asins:
             payload["filter"] = {"product_status": "all", "valid_asin_required": True}
+        if args.isku_prefix:
+            payload["filter"]["isku_prefix"] = args.isku_prefix.strip().upper()
         payload["stats"] = dict(payload.get("stats") or {})
         payload["stats"]["exported_products"] = len(products)
         payload["stats"]["exported_non_active_products"] = len(non_active)

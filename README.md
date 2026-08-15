@@ -188,6 +188,33 @@ GitHub Actions 使用以下独立 Secrets：
 
 Cloudflare 部署配置位于 `cloudflare/price-monitor/wrangler.szty.jsonc`。D1 表通过 `account_key=szty` 与 TVL 的 `account_key=primary` 隔离，不需要新增数据库表。
 
+## ASB 荷兰站看板
+
+ASB 使用独立的 WPS 清单、GitHub Actions Secrets、Cloudflare Worker 和员工域名：
+
+- 产品清单：`product_list_asb.json`
+- AirScript：`wps_airscript_asb_product_export.js`
+- 看板：`https://asb.price.tentoki.online`
+- 内部上传域名：`https://asb-price-ingest.tentoki.online`
+- 每日抓价：UTC 19:00，即北京时间次日 03:00
+- 每周清单同步：每周日 UTC 18:40，即北京时间周一 02:40
+- 观察位置：Amazon.nl 默认 Amsterdam `1079 CK`
+
+ASB 与 XND 共用一份 WPS 文件，但 ASB 欧洲产品使用 `ASB` iSKU 前缀。同步工作流只保留 `iSKU` 以 `ASB` 开头且具有有效 ASIN 的记录，避免将 XND 北美产品混入欧洲看板。所有产品状态均纳入监控。
+
+GitHub Actions 使用以下独立 Secrets：
+
+- `ASB_WPS_SCRIPT_WEBHOOK`
+- `ASB_WPS_AIRSCRIPT_TOKEN`
+- `ASB_PRICE_MONITOR_INGEST_TOKEN`
+
+对应工作流：
+
+- `.github/workflows/weekly_asb_wps_product_sync.yml`
+- `.github/workflows/daily_asb_nl_price_refresh.yml`
+
+Cloudflare 部署配置位于 `cloudflare/price-monitor/wrangler.asb.jsonc`。D1 和 R2 与其他账号复用物理资源，通过 `account_key=asb` 隔离数据。
+
 ## 从零创建 GitHub 仓库
 
 1. 注册或登录 GitHub。

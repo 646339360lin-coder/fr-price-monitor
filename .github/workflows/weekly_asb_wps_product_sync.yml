@@ -1,0 +1,45 @@
+name: Weekly ASB WPS Product List Sync
+
+on:
+  schedule:
+    - cron: "40 18 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: asb-wps-product-list-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Sync ASB product list from WPS
+        env:
+          WPS_SCRIPT_WEBHOOK: ${{ secrets.ASB_WPS_SCRIPT_WEBHOOK }}
+          WPS_AIRSCRIPT_TOKEN: ${{ secrets.ASB_WPS_AIRSCRIPT_TOKEN }}
+        run: |
+          python sync_wps_product_list.py \
+            --output product_list_asb.json \
+            --market NL \
+            --site Amazon.nl \
+            --source "WPS AirScript: ASB和XND备货表格-20250730 / 产品清单（ASB欧洲产品）" \
+            --include-all-valid-asins \
+            --isku-prefix ASB
+
+      - name: Commit synchronized ASB product list
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Sync ASB product list from WPS"
+          file_pattern: "product_list_asb.json"

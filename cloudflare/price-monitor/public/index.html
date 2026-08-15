@@ -401,8 +401,10 @@
         ES: { label: "西班牙", site: "Amazon.es", currency: "EUR", locale: "es-ES", host: "www.amazon.es" },
         NL: { label: "荷兰", site: "Amazon.nl", currency: "EUR", locale: "nl-NL", host: "www.amazon.nl" },
       };
-      const ACCOUNT = window.location.hostname.toLowerCase().startsWith("szty.") ? "szty" : "primary";
-      const ACCOUNT_MARKETS = ACCOUNT === "szty" ? ["NL"] : ["UK", "DE", "IT", "ES"];
+      const ACCOUNT_SUBDOMAIN = window.location.hostname.toLowerCase().split(".")[0];
+      const ACCOUNT = ["szty", "asb"].includes(ACCOUNT_SUBDOMAIN) ? ACCOUNT_SUBDOMAIN : "primary";
+      const ACCOUNT_LABELS = { primary: "", szty: "SZTY ", asb: "ASB " };
+      const ACCOUNT_MARKETS = ACCOUNT === "primary" ? ["UK", "DE", "IT", "ES"] : ["NL"];
       const requestedMarket = new URLSearchParams(window.location.search).get("market")?.toUpperCase();
       const MARKET = requestedMarket && ACCOUNT_MARKETS.includes(requestedMarket)
         ? requestedMarket
@@ -1774,13 +1776,13 @@
       async function init() {
         document.title = `${MARKET_META.site} 价格监控看板`;
         document.querySelector("#marketEyebrow").textContent = `${MARKET_META.site} Price Monitor`;
-        document.querySelector("#marketTitle").textContent = `${ACCOUNT === "szty" ? "SZTY " : ""}${MARKET_META.label}站手机配件价格监控`;
+        document.querySelector("#marketTitle").textContent = `${ACCOUNT_LABELS[ACCOUNT]}${MARKET_META.label}站手机配件价格监控`;
         document.querySelector("#marketSubtitle").textContent = `配送地区和当地语言已固定，价格币种为 ${MARKET_META.currency}。`;
         document.querySelectorAll(".market-button").forEach((button) => {
           button.hidden = !ACCOUNT_MARKETS.includes(button.dataset.market);
           button.classList.toggle("active", button.dataset.market === MARKET);
         });
-        if (ACCOUNT === "szty") {
+        if (ACCOUNT !== "primary") {
           document.querySelector('[data-view="competitorView"]').hidden = true;
           document.querySelector("#competitorView").hidden = true;
         }

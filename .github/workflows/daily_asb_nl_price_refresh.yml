@@ -1,0 +1,161 @@
+name: Daily ASB Amazon NL Price Refresh
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+    inputs:
+      offset:
+        description: "Optional zero-based ASIN offset for recovery runs"
+        required: false
+        default: "0"
+      limit:
+        description: "Optional ASIN count after offset; leave empty for all remaining"
+        required: false
+        default: ""
+      batch_size:
+        description: "Products per GitHub runner"
+        required: false
+        default: "50"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asb-price-refresh-nl
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      batches: ${{ steps.matrix.outputs.batches }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build batch matrix
+        id: matrix
+        env:
+          REQUESTED_OFFSET: ${{ inputs.offset }}
+          REQUESTED_LIMIT: ${{ inputs.limit }}
+          REQUESTED_BATCH_SIZE: ${{ inputs.batch_size }}
+        run: |
+          batches=$(python - <<'PY'
+          import json
+          import math
+          import os
+
+          with open("product_list_asb.json", encoding="utf-8") as handle:
+              count = len(json.load(handle).get("products", []))
+          offset = int(os.environ.get("REQUESTED_OFFSET", "").strip() or 0)
+          if offset < 0 or offset >= count:
+              raise SystemExit(f"offset must be between 0 and {count - 1}")
+          count -= offset
+          requested = os.environ.get("REQUESTED_LIMIT", "").strip()
+          if requested:
+              count = min(count, int(requested))
+          batch_size = int(os.environ.get("REQUESTED_BATCH_SIZE", "").strip() or 50)
+          if batch_size < 1:
+              raise SystemExit("batch_size must be at least 1")
+          print(json.dumps(list(range(max(1, math.ceil(count / batch_size))))))
+          PY
+          )
+          echo "batches=$batches" >> "$GITHUB_OUTPUT"
+
+  refresh:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        batch: ${{ fromJSON(needs.prepare.outputs.batches) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Download previous valid observations
+        env:
+          PRICE_MONITOR_URL: https://asb-price-ingest.tentoki.online
+          PRICE_MONITOR_INGEST_TOKEN: ${{ secrets.ASB_PRICE_MONITOR_INGEST_TOKEN }}
+        run: |
+          python cloudflare_price_sync.py download-seed \
+            --account asb \
+            --market NL \
+            --output .runtime/asb/nl/price_history.json
+
+      - name: Refresh Amazon.nl prices
+        env:
+          PYTHONUNBUFFERED: "1"
+          REQUESTED_OFFSET: ${{ inputs.offset }}
+          REQUESTED_LIMIT: ${{ inputs.limit }}
+          REQUESTED_BATCH_SIZE: ${{ inputs.batch_size }}
+        run: |
+          batch_size="${REQUESTED_BATCH_SIZE:-50}"
+          base_offset="${REQUESTED_OFFSET:-0}"
+          offset=$(( base_offset + ${{ matrix.batch }} * batch_size ))
+          limit="$batch_size"
+          if [ -n "$REQUESTED_LIMIT" ]; then
+            processed=$(( ${{ matrix.batch }} * batch_size ))
+            remaining=$(( REQUESTED_LIMIT - processed ))
+            if [ "$remaining" -lt "$limit" ]; then limit="$remaining"; fi
+          fi
+          python multi_market_price_refresh.py \
+            --market NL \
+            --product-list product_list_asb.json \
+            --retry-failures 1 \
+            --offset "$offset" \
+            --limit "$limit" \
+            --latest-output .runtime/asb/nl/price_results_latest.json \
+            --history-output .runtime/asb/nl/price_history.json
+
+      - name: Upload batch artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: asb-nl-batch-${{ matrix.batch }}
+          path: .runtime/asb/nl/price_results_latest.json
+          retention-days: 1
+
+  publish:
+    needs: refresh
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all batch artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: asb-nl-batch-*
+          path: .runtime/asb/nl/batches
+
+      - name: Merge batch results
+        run: |
+          python merge_price_batches.py \
+            --market NL \
+            --input-dir .runtime/asb/nl/batches \
+            --output .runtime/asb/nl/price_results_latest.json
+
+      - name: Upload results to Cloudflare
+        env:
+          PRICE_MONITOR_URL: https://asb-price-ingest.tentoki.online
+          PRICE_MONITOR_INGEST_TOKEN: ${{ secrets.ASB_PRICE_MONITOR_INGEST_TOKEN }}
+        run: |
+          python cloudflare_price_sync.py upload \
+            --account asb \
+            --market NL \
+            --latest .runtime/asb/nl/price_results_latest.json \
+            --catalog product_list_asb.json
