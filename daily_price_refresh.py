@@ -666,6 +666,8 @@ def retryable_status(status: Any) -> bool:
 def should_replace_with_retry(previous: dict[str, Any], retry_record: dict[str, Any]) -> bool:
     if retry_record.get("status") == "ok":
         return True
+    if retry_record.get("status") == "unavailable" and retryable_status(previous.get("status")):
+        return True
     if previous.get("status") == "location_not_postcode" and retry_record.get("status") != "location_not_postcode":
         return True
     if retry_record.get("status") == "page_not_found" and previous.get("status") != "ok":

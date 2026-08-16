@@ -350,6 +350,11 @@ def build_error_record(
     return record
 
 
+def availability_is_unavailable(availability: str | None, market: dict[str, Any]) -> bool:
+    text = str(availability or "").lower()
+    return bool(text and any(word.lower() in text for word in market.get("unavailable_words", [])))
+
+
 async def scrape_product(
     page: "Page",
     product: dict[str, Any],
@@ -396,7 +401,7 @@ async def scrape_product(
             await page.locator(
                 "#corePrice_feature_div .a-price .a-offscreen, "
                 "#apex_desktop .a-price .a-offscreen, "
-                ".priceToPay .a-offscreen"
+                ".priceToPay .a-offscreen, #availability, #outOfStock"
             ).first.wait_for(state="attached", timeout=price_wait_ms)
         except Exception:
             pass
@@ -460,6 +465,8 @@ async def scrape_product(
         status = f"currency_mismatch:{detected_currency}"
     elif not location_valid:
         status = "location_not_postcode"
+    elif current_price is None and availability_is_unavailable(availability, market):
+        status = "unavailable"
     elif current_price is None:
         status = "price_missing"
     else:

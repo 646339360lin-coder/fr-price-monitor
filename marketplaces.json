@@ -86,11 +86,13 @@
     "postcode": "1079",
     "country_code": "NL",
     "city": "Amsterdam",
+    "price_wait_ms": 6000,
     "cooldown_every": 75,
     "cooldown_seconds": 120,
     "locale_cookie_name": "lc-acbnl",
     "locale_cookie": "nl_NL",
     "clearance_words": ["clearance", "opruiming", "uitverkoop", "laatste kans"],
+    "unavailable_words": ["momenteel niet verkrijgbaar", "currently unavailable"],
     "not_found_words": ["pagina niet gevonden", "sorry"]
   }
 }
