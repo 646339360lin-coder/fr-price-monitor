@@ -28,7 +28,7 @@ jobs:
       - name: Sync ASB product list from WPS
         env:
           WPS_SCRIPT_WEBHOOK: ${{ secrets.ASB_WPS_SCRIPT_WEBHOOK }}
-          WPS_AIRSCRIPT_TOKEN: ${{ secrets.WPS_AIRSCRIPT_TOKEN }}
+          WPS_AIRSCRIPT_TOKEN: ${{ secrets.ASB_WPS_AIRSCRIPT_TOKEN }}
         run: |
           python sync_wps_product_list.py \
             --output product_list_asb.json \
