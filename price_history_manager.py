@@ -84,6 +84,22 @@ def latest_valid_history_by_product(history: dict[str, Any]) -> dict[str, dict[s
     return latest
 
 
+def latest_engagement_history_by_product(history: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    latest: dict[str, dict[str, Any]] = {}
+    for entry in history.get("products", []):
+        key = product_key(entry)
+        if not key:
+            continue
+        previous = latest.setdefault(key, {})
+        for field in ("rating", "review_count", "monthly_sales_label"):
+            if entry.get(field) not in (None, ""):
+                previous[field] = entry[field]
+                source_field = f"{field}_source"
+                if entry.get(source_field):
+                    previous[source_field] = entry[source_field]
+    return latest
+
+
 def inherit_clearance_msrp(record: dict[str, Any], previous: dict[str, Any] | None) -> dict[str, Any]:
     if not record.get("clearance_detected"):
         return record
@@ -107,12 +123,16 @@ def merge_price_results(
     history = load_json(history_path, {"generated_at": None, "products": []})
     previous_by_key = latest_history_by_product(history)
     previous_valid_by_key = latest_valid_history_by_product(history)
+    previous_engagement_by_key = latest_engagement_history_by_product(history)
 
     normalized_records: list[dict[str, Any]] = []
     scrape_time = utc_now_iso()
     for raw in new_records:
         record = deepcopy(raw)
         record.setdefault("scraped_at", scrape_time)
+        record = carry_forward_engagement(
+            record, previous_engagement_by_key.get(product_key(record))
+        )
         record = carry_forward_valid_price(record, previous_valid_by_key.get(product_key(record)))
         record = inherit_clearance_msrp(record, previous_by_key.get(product_key(record)))
         record["discount_percent"] = calculate_discount(record.get("current_price"), record.get("msrp_price"))
@@ -141,6 +161,18 @@ def merge_price_results(
     save_json(latest_path, latest_payload)
     save_json(history_path, history_payload)
     return latest_payload
+
+
+def carry_forward_engagement(
+    record: dict[str, Any], previous: dict[str, Any] | None
+) -> dict[str, Any]:
+    if not previous:
+        return record
+    for field in ("rating", "review_count", "monthly_sales_label"):
+        if record.get(field) in (None, "") and previous.get(field) not in (None, ""):
+            record[field] = previous[field]
+            record[f"{field}_source"] = "history_carried_forward"
+    return record
 
 
 def carry_forward_valid_price(record: dict[str, Any], previous: dict[str, Any] | None) -> dict[str, Any]:

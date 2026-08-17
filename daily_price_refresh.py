@@ -373,6 +373,19 @@ async def extract_engagement_metrics(page: "Page", structured: dict[str, Any]) -
     }
 
 
+async def wait_for_engagement_metrics(page: "Page", timeout_ms: int) -> None:
+    if timeout_ms <= 0:
+        return
+    try:
+        await page.locator(
+            "#acrPopover, #acrCustomerReviewText, "
+            "[data-hook='rating-out-of-text'], [data-hook='total-review-count'], "
+            "#averageCustomerReviews"
+        ).first.wait_for(state="attached", timeout=timeout_ms)
+    except Exception:
+        pass
+
+
 async def extract_main_image(page: "Page") -> str | None:
     selectors = [
         "#landingImage",

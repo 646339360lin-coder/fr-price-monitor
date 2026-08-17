@@ -87,6 +87,7 @@
     "country_code": "NL",
     "city": "Amsterdam",
     "price_wait_ms": 6000,
+    "engagement_wait_ms": 5000,
     "cooldown_every": 75,
     "cooldown_seconds": 120,
     "locale_cookie_name": "lc-acbnl",

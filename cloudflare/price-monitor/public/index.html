@@ -213,6 +213,10 @@
 
       <section class="view-panel active" id="detailsView">
         <h2>商品明细</h2>
+        <div class="panel-toolbar">
+          <button id="exportAllExcel" type="button">导出全部数据 Excel</button>
+          <span class="toolbar-note" id="allExportStatus">导出当前站点全部商品，不受筛选条件影响</span>
+        </div>
         <div class="table-wrap">
           <table data-filter-table="details">
             <thead>
@@ -424,6 +428,7 @@
         weeklyHistoryLoaded: false,
         weeklyHistoryLoading: false,
         competitors: [],
+        catalogProducts: [],
         sourceProducts: [],
         originalSourceProducts: [],
         nonActiveProducts: [],
@@ -688,6 +693,7 @@
       }
 
       function loadSourceProductList(latestProducts, source) {
+        state.catalogProducts = Array.isArray(source.products) ? cloneProducts(source.products) : [];
         const products = cloneProducts(latestProducts).map((item) => ({
           ...item,
           url: item.url || item.product_url || "",
@@ -1578,6 +1584,136 @@
         if (node) node.textContent = `已导出：${rows.length} 个 ASIN`;
       }
 
+      function downloadAllExcel() {
+        const latestByAsin = new Map(state.latest.map((item) => [asinOf(item).toUpperCase(), item]));
+        const catalogAsins = new Set();
+        const rows = state.catalogProducts.map((catalogItem) => {
+          const asin = asinOf(catalogItem).toUpperCase();
+          catalogAsins.add(asin);
+          return { ...catalogItem, ...(latestByAsin.get(asin) || {}), export_scope: "商品目录" };
+        });
+        state.latest.forEach((item) => {
+          const asin = asinOf(item).toUpperCase();
+          if (!catalogAsins.has(asin)) rows.push({ ...item, export_scope: "价格记录" });
+        });
+        state.nonActiveProducts.forEach((item) => rows.push({ ...item, export_scope: "非在售产品" }));
+        rows.sort((a, b) => {
+          const left = asinOf(a) || a.sku || "";
+          const right = asinOf(b) || b.sku || "";
+          return String(left).localeCompare(String(right));
+        });
+        if (!rows.length) {
+          window.alert("当前站点还没有可导出的商品数据。");
+          return;
+        }
+        const html = allProductsExcelHtml(rows);
+        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${ACCOUNT_LABELS[ACCOUNT] || ""}${MARKET}_全部商品_${todayStamp()}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        const node = document.querySelector("#allExportStatus");
+        if (node) node.textContent = `已导出：${rows.length} 个 ASIN`;
+      }
+
+      function allProductsExcelHtml(rows) {
+        const headers = [
+          "ASIN",
+          "Amazon URL",
+          "数据范围",
+          "重点关注",
+          "类型",
+          "款式",
+          "型号",
+          "规格",
+          "手机品牌",
+          "SKU",
+          "iSKU",
+          "FNSKU",
+          "产品状态",
+          "源表行",
+          "评分",
+          "评论数",
+          "近30天销量标签",
+          `当前售价 ${MARKET_META.currency}`,
+          `MSRP ${MARKET_META.currency}`,
+          "折扣比例",
+          "促销状态",
+          "抓取状态",
+          "库存状态",
+          "价格来源",
+          "评分来源",
+          "评论数来源",
+          "备忘",
+          "备忘日期",
+          "抓取时间",
+        ];
+        const bodyRows = rows.map((item) => {
+          const asin = asinOf(item);
+          const isNonActive = item.export_scope === "非在售产品";
+          const note = isNonActive
+            ? (state.nonActiveNotes[nonActiveKey(item)] || {})
+            : (state.notes[asin] || {});
+          return [
+            asin,
+            item.product_url || item.url || amazonUrlForAsin(asin),
+            item.export_scope || "",
+            state.focused.has(asin) ? "是" : "否",
+            item.category || "",
+            item.style || "",
+            item.model || "",
+            item.spec || "",
+            item.phone_brand || "",
+            item.sku || "",
+            item.isku || "",
+            item.fnsku || "",
+            item.product_status || "",
+            item.source_row || "",
+            item.rating ?? "",
+            item.review_count ?? "",
+            item.monthly_sales_label || "",
+            price(item.current_price) ?? "",
+            price(item.msrp_price) ?? "",
+            item.discount_percent ?? "",
+            item.promotion_status || "",
+            item.status || "",
+            item.availability || "",
+            item.price_source || "",
+            item.rating_source || "",
+            item.review_count_source || "",
+            note.text || "",
+            note.updated_at || "",
+            item.scraped_at || "",
+          ];
+        });
+        return excelTableHtml(headers, bodyRows);
+      }
+
+      function excelTableHtml(headers, bodyRows) {
+        return `<!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                table { border-collapse: collapse; }
+                th, td { border: 1px solid #999; padding: 6px; white-space: nowrap; }
+                th { background: #eef2ff; font-weight: 700; }
+                td { mso-number-format:"\\@"; }
+              </style>
+            </head>
+            <body>
+              <table>
+                <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+                <tbody>${bodyRows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+              </table>
+            </body>
+          </html>`;
+      }
+
       function focusExcelHtml(rows) {
         const headers = [
           "ASIN",
@@ -1791,7 +1927,7 @@
         initializeColumnFilters();
         const [latest, source, , competitors] = await Promise.all([
           loadJson(`/api/market/${MARKET}/latest`, { products: [] }),
-          loadOptionalJson(`/api/market/${MARKET}/catalog?scope=inactive`, { non_active_products: [] }),
+          loadOptionalJson(`/api/market/${MARKET}/catalog`, { products: [], non_active_products: [] }),
           loadRemoteState(),
           ACCOUNT === "szty"
             ? Promise.resolve({ products: [] })
@@ -1815,6 +1951,7 @@
         ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
         document.querySelector("#nonActiveSearch").addEventListener("input", renderNonActiveProducts);
+        document.querySelector("#exportAllExcel").addEventListener("click", downloadAllExcel);
         document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
         if (ACCOUNT !== "szty") {
           document.querySelector("#competitorEntryForm").addEventListener("submit", addCompetitor);

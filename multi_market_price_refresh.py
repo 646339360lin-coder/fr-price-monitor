@@ -31,6 +31,7 @@ from daily_price_refresh import (
     safe_text,
     should_replace_with_retry,
     utc_now_iso,
+    wait_for_engagement_metrics,
 )
 from price_history_manager import merge_price_results
 
@@ -445,9 +446,13 @@ async def scrape_product(
         detected_currency and str(detected_currency).upper() != market["currency"]
     )
 
+    availability = await safe_text(page, "#availability, #outOfStock")
+    unavailable = current_price is None and availability_is_unavailable(availability, market)
+    if unavailable:
+        await wait_for_engagement_metrics(page, int(market.get("engagement_wait_ms") or 0))
+        structured = await extract_structured_product(page)
     engagement = await extract_engagement_metrics(page, structured)
     promotion = await extract_promotion_status(page)
-    availability = await safe_text(page, "#availability, #outOfStock")
     image_url = await extract_main_image(page)
     observer_location = await safe_text(page, "#glow-ingress-line2, #nav-global-location-popover-link")
     location_valid = (
@@ -465,7 +470,7 @@ async def scrape_product(
         status = f"currency_mismatch:{detected_currency}"
     elif not location_valid:
         status = "location_not_postcode"
-    elif current_price is None and availability_is_unavailable(availability, market):
+    elif unavailable:
         status = "unavailable"
     elif current_price is None:
         status = "price_missing"
