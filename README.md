@@ -115,7 +115,8 @@ GitHub Secrets 使用以下名称：
 - `WPS_AIRSCRIPT_TOKEN`
 
 TVL、SZTY 和 ASB 的 WPS 同步共用同一个个人 AirScript Token，三个工作流都只读取
-`WPS_AIRSCRIPT_TOKEN`。各账号的 webhook 仍保持独立，避免同步到错误的产品清单。
+`WPS_AIRSCRIPT_TOKEN`。各账号的 webhook 仍保持独立，避免同步到错误的产品清单。三个同步任务
+也共用同一并发组，多个任务同时触发时会排队执行，避免自动提交互相冲突。
 
 工作流 `.github/workflows/weekly_wps_product_sync.yml` 每周一 UTC 01:30（北京时间 09:30）同步一次，比每日 UTC 02:20 的价格抓取提前 50 分钟。也可以在 GitHub Actions 中手动运行 `Weekly WPS Product List Sync`。
 
