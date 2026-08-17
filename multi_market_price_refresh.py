@@ -140,6 +140,7 @@ async def continue_shopping_if_prompted(page: "Page") -> bool:
     prompts = (
         "Continue shopping",
         "Weiter einkaufen",
+        "Weiter shoppen",
         "Continua gli acquisti",
         "Continuar comprando",
         "Doorgaan met winkelen",

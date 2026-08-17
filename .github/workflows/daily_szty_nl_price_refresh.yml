@@ -116,6 +116,7 @@ jobs:
           python multi_market_price_refresh.py \
             --market NL \
             --product-list product_list_szty.json \
+            --allow-empty \
             --retry-failures 1 \
             --offset "$offset" \
             --limit "$limit" \
