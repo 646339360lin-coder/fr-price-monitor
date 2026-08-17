@@ -114,6 +114,9 @@ GitHub Secrets 使用以下名称：
 - `WPS_SCRIPT_WEBHOOK`
 - `WPS_AIRSCRIPT_TOKEN`
 
+TVL、SZTY 和 ASB 的 WPS 同步共用同一个个人 AirScript Token，三个工作流都只读取
+`WPS_AIRSCRIPT_TOKEN`。各账号的 webhook 仍保持独立，避免同步到错误的产品清单。
+
 工作流 `.github/workflows/weekly_wps_product_sync.yml` 每周一 UTC 01:30（北京时间 09:30）同步一次，比每日 UTC 02:20 的价格抓取提前 50 分钟。也可以在 GitHub Actions 中手动运行 `Weekly WPS Product List Sync`。
 
 ## 爬虫策略
@@ -173,10 +176,10 @@ SZTY 使用独立的 WPS 清单、GitHub Actions Secrets、Cloudflare Worker 账
 
 SZTY 同步会把 WPS“产品清单”中所有唯一且有效的 ASIN 纳入价格抓取，不按产品状态排除；没有 ASIN 的资料行只保留在非在售资料中。第一版只抓 SZTY 自有产品，不启用竞品跟踪。
 
-GitHub Actions 使用以下独立 Secrets：
+GitHub Actions 使用以下 Secrets：
 
 - `SZTY_WPS_SCRIPT_WEBHOOK`
-- `SZTY_WPS_AIRSCRIPT_TOKEN`
+- `WPS_AIRSCRIPT_TOKEN`（与 TVL、ASB 共用）
 - `SZTY_PRICE_MONITOR_INGEST_TOKEN`
 
 对应工作流：
@@ -202,10 +205,10 @@ ASB 使用独立的 WPS 清单、GitHub Actions Secrets、Cloudflare Worker 和�
 
 ASB 与 XND 共用一份 WPS 文件，但 ASB 欧洲产品使用 `ASB` iSKU 前缀。同步工作流只保留 `iSKU` 以 `ASB` 开头且具有有效 ASIN 的记录，避免将 XND 北美产品混入欧洲看板。所有产品状态均纳入监控。
 
-GitHub Actions 使用以下独立 Secrets：
+GitHub Actions 使用以下 Secrets：
 
 - `ASB_WPS_SCRIPT_WEBHOOK`
-- `ASB_WPS_AIRSCRIPT_TOKEN`
+- `WPS_AIRSCRIPT_TOKEN`（与 TVL、SZTY 共用）
 - `ASB_PRICE_MONITOR_INGEST_TOKEN`
 
 对应工作流：
