@@ -1617,7 +1617,7 @@
         link.remove();
         URL.revokeObjectURL(url);
         const node = document.querySelector("#allExportStatus");
-        if (node) node.textContent = `已导出：${rows.length} 个 ASIN`;
+        if (node) node.textContent = `已导出：${rows.length} 行数据`;
       }
 
       function allProductsExcelHtml(rows) {
