@@ -3,7 +3,7 @@
   "market": "NL",
   "site": "Amazon.nl",
   "source": "WPS AirScript: ASB和XND备货表格-20250730 / 产品清单（ASB欧洲产品）",
-  "synced_at": "2026-08-17T09:52:11Z",
+  "synced_at": "2026-08-23T19:00:45Z",
   "schema_version": 1,
   "filter": {
     "product_status": "all",
