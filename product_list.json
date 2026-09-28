@@ -3,7 +3,7 @@
   "market": "FR",
   "site": "Amazon.fr",
   "source": "WPS AirScript: TVL备货表格-20240914 / 产品清单",
-  "synced_at": "2026-09-21T06:47:24Z",
+  "synced_at": "2026-09-28T07:20:36Z",
   "schema_version": 1,
   "filter": {
     "product_status": [
