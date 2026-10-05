@@ -3,7 +3,7 @@
   "market": "FR",
   "site": "Amazon.fr",
   "source": "WPS AirScript: TVL备货表格-20240914 / 产品清单",
-  "synced_at": "2026-09-28T07:20:36Z",
+  "synced_at": "2026-10-05T07:26:56Z",
   "schema_version": 1,
   "filter": {
     "product_status": [
@@ -7573,7 +7573,7 @@
       "model": "Samsung Galaxy S9",
       "name": "裸片 曲面 Samsung Galaxy S9 2片装",
       "phone_brand": "Samsung",
-      "product_status": "清货",
+      "product_status": "已清完",
       "sku": "IT-S9",
       "source_row": "35",
       "spec": "2片装",
@@ -10193,7 +10193,7 @@
       "model": "Samsung Galaxy S8 Plus",
       "name": "裸片 曲面 Samsung Galaxy S8 Plus 2片装",
       "phone_brand": "Samsung",
-      "product_status": "清货",
+      "product_status": "已清完",
       "sku": "FR-S8P",
       "source_row": "229",
       "spec": "2片装",
