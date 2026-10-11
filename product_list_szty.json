@@ -3,7 +3,7 @@
   "market": "NL",
   "site": "Amazon.nl",
   "source": "WPS AirScript: SZTY备货表格-20260428 / 产品清单",
-  "synced_at": "2026-10-04T19:19:09Z",
+  "synced_at": "2026-10-11T20:01:16Z",
   "schema_version": 1,
   "filter": {
     "product_status": "all",
