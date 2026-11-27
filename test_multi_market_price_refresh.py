@@ -2,7 +2,18 @@ from __future__ import annotations
 
 import unittest
 
-from multi_market_price_refresh import continue_shopping_if_prompted
+from multi_market_price_refresh import continue_shopping_if_prompted, load_marketplace
+
+
+class MarketplaceConfigTests(unittest.TestCase):
+    def test_france_uses_local_language_currency_and_postcode(self) -> None:
+        market = load_marketplace("FR")
+
+        self.assertEqual(market["site"], "Amazon.fr")
+        self.assertEqual(market["locale"], "fr-FR")
+        self.assertEqual(market["language_query"], "fr_FR")
+        self.assertEqual(market["currency"], "EUR")
+        self.assertEqual(market["postcode"], "75001")
 
 
 class FakeLocator:

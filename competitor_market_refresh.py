@@ -186,7 +186,7 @@ async def run(args: argparse.Namespace) -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Capture daily Amazon competitor pages")
-    parser.add_argument("--market", required=True, choices=("UK", "DE", "IT", "ES"))
+    parser.add_argument("--market", required=True, choices=("UK", "DE", "FR", "IT", "ES"))
     parser.add_argument("--marketplace-file", default="marketplaces.json")
     parser.add_argument("--min-delay", type=float, default=1.0)
     parser.add_argument("--max-delay", type=float, default=3.0)

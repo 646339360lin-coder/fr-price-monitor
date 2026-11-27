@@ -34,7 +34,9 @@
       .data-status { display: none; border-color: #f59e0b; background: #fffbeb; color: #92400e; }
       .data-status.active { display: block; }
       .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
-      .filter-actions { display: flex; align-items: end; }
+      .filter-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+      .download-excel { width: auto; min-height: 39px; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 14px; background: #eff6ff; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; }
+      .download-excel:hover { background: #dbeafe; }
       .clear-all-filters { width: auto; min-height: 39px; border: 1px solid #fca5a5; border-radius: 6px; padding: 8px 14px; background: #fff; color: var(--bad); font: inherit; font-weight: 700; cursor: pointer; }
       .clear-all-filters:hover { background: #fef2f2; }
       label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
@@ -162,6 +164,7 @@
       <nav class="market-nav" aria-label="国家站点切换">
         <a class="market-button" data-market="UK" href="/?market=UK">英国站</a>
         <a class="market-button" data-market="DE" href="/?market=DE">德国站</a>
+        <a class="market-button" data-market="FR" href="/?market=FR">法国站</a>
         <a class="market-button" data-market="IT" href="/?market=IT">意大利站</a>
         <a class="market-button" data-market="ES" href="/?market=ES">西班牙站</a>
         <a class="market-button" data-market="NL" href="/?market=NL">荷兰站</a>
@@ -178,7 +181,10 @@
         <label>自定义搜索<input id="searchQuery" type="search" placeholder="ASIN / 型号 / 款式 / 备注" /></label>
         <label>最低价<input id="minPrice" type="number" min="0" step="0.01" placeholder="" /></label>
         <label>最高价<input id="maxPrice" type="number" min="0" step="0.01" placeholder="" /></label>
-        <div class="filter-actions"><button class="clear-all-filters" id="clearAllFilters" type="button">清除所有筛选</button></div>
+        <div class="filter-actions">
+          <button class="download-excel" id="downloadFilteredExcel" type="button">下载当前筛选 Excel</button>
+          <button class="clear-all-filters" id="clearAllFilters" type="button">清除所有筛选</button>
+        </div>
       </section>
 
       <section class="metrics" id="metrics"></section>
@@ -401,6 +407,7 @@
       const MARKET_CONFIG = {
         UK: { label: "英国", site: "Amazon.co.uk", currency: "GBP", locale: "en-GB", host: "www.amazon.co.uk" },
         DE: { label: "德国", site: "Amazon.de", currency: "EUR", locale: "de-DE", host: "www.amazon.de" },
+        FR: { label: "法国", site: "Amazon.fr", currency: "EUR", locale: "fr-FR", host: "www.amazon.fr" },
         IT: { label: "意大利", site: "Amazon.it", currency: "EUR", locale: "it-IT", host: "www.amazon.it" },
         ES: { label: "西班牙", site: "Amazon.es", currency: "EUR", locale: "es-ES", host: "www.amazon.es" },
         NL: { label: "荷兰", site: "Amazon.nl", currency: "EUR", locale: "nl-NL", host: "www.amazon.nl" },
@@ -408,7 +415,7 @@
       const ACCOUNT_SUBDOMAIN = window.location.hostname.toLowerCase().split(".")[0];
       const ACCOUNT = ["szty", "asb"].includes(ACCOUNT_SUBDOMAIN) ? ACCOUNT_SUBDOMAIN : "primary";
       const ACCOUNT_LABELS = { primary: "", szty: "SZTY ", asb: "ASB " };
-      const ACCOUNT_MARKETS = ACCOUNT === "primary" ? ["UK", "DE", "IT", "ES"] : ["NL"];
+      const ACCOUNT_MARKETS = ACCOUNT === "primary" ? ["UK", "DE", "FR", "IT", "ES"] : ["NL"];
       const requestedMarket = new URLSearchParams(window.location.search).get("market")?.toUpperCase();
       const MARKET = requestedMarket && ACCOUNT_MARKETS.includes(requestedMarket)
         ? requestedMarket
@@ -445,6 +452,7 @@
         columnColors: { details: {}, focus: {}, competitor: {} },
         tableFilterSources: { details: [], focus: [], competitor: [] },
         activeColumnFilter: null,
+        visibleDetailRows: [],
         visibleFocusRows: [],
       };
       const fmt = new Intl.NumberFormat(MARKET_META.locale, { style: "currency", currency: MARKET_META.currency });
@@ -1571,17 +1579,22 @@
           return;
         }
         const html = focusExcelHtml(rows);
-        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `重点关注_${todayStamp()}.xls`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
+        downloadExcelFile(html, `重点关注_${todayStamp()}.xls`);
         const node = document.querySelector("#focusExportStatus");
         if (node) node.textContent = `已导出：${rows.length} 个 ASIN`;
+      }
+
+      function downloadFilteredExcel() {
+        const rows = state.visibleDetailRows.map((item) => ({ ...item, export_scope: "当前筛选" }));
+        if (!rows.length) {
+          window.alert("当前筛选条件下没有可导出的商品数据。");
+          return;
+        }
+        const html = allProductsExcelHtml(rows);
+        downloadExcelFile(html, `${ACCOUNT_LABELS[ACCOUNT] || ""}${MARKET}_当前筛选_${todayStamp()}.xls`);
+        const button = document.querySelector("#downloadFilteredExcel");
+        button.textContent = `已下载 ${rows.length} 行`;
+        window.setTimeout(() => { button.textContent = "下载当前筛选 Excel"; }, 1600);
       }
 
       function downloadAllExcel() {
@@ -1607,17 +1620,21 @@
           return;
         }
         const html = allProductsExcelHtml(rows);
-        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+        downloadExcelFile(html, `${ACCOUNT_LABELS[ACCOUNT] || ""}${MARKET}_全部商品_${todayStamp()}.xls`);
+        const node = document.querySelector("#allExportStatus");
+        if (node) node.textContent = `已导出：${rows.length} 行数据`;
+      }
+
+      function downloadExcelFile(html, fileName) {
+        const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `${ACCOUNT_LABELS[ACCOUNT] || ""}${MARKET}_全部商品_${todayStamp()}.xls`;
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        const node = document.querySelector("#allExportStatus");
-        if (node) node.textContent = `已导出：${rows.length} 行数据`;
       }
 
       function allProductsExcelHtml(rows) {
@@ -1883,6 +1900,8 @@
         const focusRows = applyColumnFilters(focusBaseRows, "focus");
         const competitorRows = applyColumnFilters(competitorBaseRows, "competitor");
         renderMetrics(detailsColumnRows);
+        state.visibleDetailRows = rows;
+        document.querySelector("#downloadFilteredExcel").title = `下载当前显示的 ${rows.length} 行商品数据`;
         renderTable(rows, "#productRows", { tableId: "details" });
         state.visibleFocusRows = focusRows;
         renderTable(focusRows, "#focusRows", { tableId: "focus", emptyMessage: "还没有重点关注商品。请在商品明细里勾选“关注”。" });
@@ -1918,6 +1937,7 @@
           button.hidden = !ACCOUNT_MARKETS.includes(button.dataset.market);
           button.classList.toggle("active", button.dataset.market === MARKET);
         });
+        document.querySelector("#downloadFilteredExcel").hidden = ACCOUNT !== "primary";
         if (ACCOUNT !== "primary") {
           document.querySelector('[data-view="competitorView"]').hidden = true;
           document.querySelector("#competitorView").hidden = true;
@@ -1951,6 +1971,9 @@
         ["#shellBrandFilter", "#shellModelSearch", "#shellStatusFilter"]
           .forEach((selector) => document.querySelector(selector).addEventListener("input", renderShellOpportunity));
         document.querySelector("#nonActiveSearch").addEventListener("input", renderNonActiveProducts);
+        if (ACCOUNT === "primary") {
+          document.querySelector("#downloadFilteredExcel").addEventListener("click", downloadFilteredExcel);
+        }
         document.querySelector("#exportAllExcel").addEventListener("click", downloadAllExcel);
         document.querySelector("#exportFocusExcel").addEventListener("click", downloadFocusExcel);
         if (ACCOUNT !== "szty") {

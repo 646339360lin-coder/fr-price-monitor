@@ -1,4 +1,23 @@
 {
+  "FR": {
+    "site": "Amazon.fr",
+    "host": "www.amazon.fr",
+    "base_url": "https://www.amazon.fr",
+    "locale": "fr-FR",
+    "language_query": "fr_FR",
+    "accept_language": "fr-FR,fr;q=0.9,en;q=0.7",
+    "timezone": "Europe/Paris",
+    "currency": "EUR",
+    "postcode": "75001",
+    "country_code": "FR",
+    "city": "Paris",
+    "cooldown_every": 75,
+    "cooldown_seconds": 120,
+    "locale_cookie_name": "lc-acbfr",
+    "locale_cookie": "fr_FR",
+    "clearance_words": ["clearance", "déstockage", "destockage", "liquidation", "soldes"],
+    "not_found_words": ["page introuvable", "désolé", "desole"]
+  },
   "UK": {
     "site": "Amazon.co.uk",
     "host": "www.amazon.co.uk",

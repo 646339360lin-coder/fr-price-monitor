@@ -2,6 +2,8 @@
 
 这个项目用于每天监控 Amazon.fr 上 Tentoki 及竞品的手机配件价格，并把结果发布成一个 GitHub Pages 看板。
 
+其他独立运营项目：[手机壳选品助手](手机壳选品助手/README.md)（本机HTML、手动运行）。其资料、研究证据和报告在独立子目录管理。
+
 ## 当前监控范围
 
 - 网站：Amazon.fr
@@ -126,38 +128,53 @@ TVL、SZTY 和 ASB 的 WPS 同步共用同一个个人 AirScript Token，三个�
 - 每个商品请求之间随机等待 1-3 秒
 - 使用固定 User-Agent
 - 每次抓取前读取 Amazon.fr `robots.txt`，不允许访问的 URL 会跳过
-- 优先读取 JSON-LD 和页面内嵌 JSON 的价格，再使用 DOM 兜底
+- 当前售价依次尝试 JSON-LD、Amazon 核心价格区域 DOM、页面内嵌 JSON；命中后记录 `price_source`
+- `msrp_price` 是“参考价候选值”，依次尝试 JSON-LD 的 `highPrice` / `priceSpecification.price`、DOM 的 `basisPrice`、页面内嵌 JSON 所有命中价格中的最大值；命中后记录 `msrp_source`
 - 评分和评论数优先读取 JSON-LD `aggregateRating`，缺失时使用页面元素兜底
 - 保存 Amazon 展示的近 30 天销量标签原文；页面没有标签时字段为空，不推算销量
 - 检测到 Clearance / Déstockage / Soldes 等清仓词时，不把页面中间态 ticket 价当作 MSRP；如历史中已有 MSRP，会继承历史 MSRP
 
-注意：Amazon 可能出现验证码、地区价格差异或临时屏蔽。脚本会把异常写入 `status` 字段，避免误当成有效价格。
+折扣仅在当前售价和 MSRP 都有效且 `MSRP > 当前售价` 时计算：
 
-## 英德意西统一员工看板
+```text
+discount_percent = (MSRP - 当前售价) / MSRP * 100
+```
 
-法国看板继续使用原来的 GitHub Pages、JSON 文件和 `Daily Amazon.fr Price Refresh` 工作流，现有地址与抓取规则不变。
+需要特别注意：当前 `msrp_price` 不等于“买家前台一定可见的划线价”。Amazon 页面可能在隐藏的 `.a-offscreen` 节点、未选中的变体或内嵌数据中保留参考价格；DOM 兜底读取第一个匹配节点，内嵌 JSON 兜底会取页面命中价格的最大值，当前实现尚未校验参考价节点是否可见、是否属于已选变体、是否带有 `Prix conseillé` 等买家可见标签。因此，运营判断促销时必须同时检查 `msrp_source` 并到相同邮编、语言和变体的前台复核，不能只依据看板 MSRP 和折扣列。
 
-英国、德国、意大利和西班牙使用同一份 WPS 产品清单，并通过以下链路运行：
+当本轮没有抓到当前售价时，系统会沿用历史中上一条有效价格并标记 `status=stale_price`、`price_source=history_carried_forward`；Clearance 商品只有在本轮没有 MSRP 时才可能标记 `msrp_source=history_inherited_for_clearance`。其他 `dom_fallback` 或 `json_ld` 来源都表示本轮页面提取，不代表价格一定在前台可见。
 
-1. `.github/workflows/daily_eu_market_price_refresh.yml` 在 GitHub Actions 中按站点错峰启动 Playwright。
-2. `multi_market_price_refresh.py` 分别设置当地语言、币种和配送邮编后抓取 Amazon 页面。
-3. `cloudflare_price_sync.py` 把本次结果上传到 Cloudflare D1；四站价格 JSON 不提交到公开 Git 仓库。
-4. `competitor_market_refresh.py` 读取当前站点已登记的竞品 ASIN，使用相同的语言、邮编和币种抓取页面，并把每日页面截图保存到私有 R2。
-5. `https://price.tentoki.online` 从 D1 读取数据，并通过顶部按钮切换英国、德国、意大利和西班牙。
+Amazon 还可能出现验证码、地区价格差异或临时屏蔽。脚本会把异常写入 `status` 字段，避免误当成有效价格。
 
-四站自动运行时间（UTC）：
+## 英德法意西统一员工看板
 
+英国、德国、法国、意大利和西班牙使用同一份 WPS 产品清单，并通过以下链路运行：
+
+1. `.github/workflows/weekly_wps_product_sync.yml` 每天 UTC 01:30 从 WPS 同步一次 `product_list.json`。
+2. `.github/workflows/daily_eu_market_price_refresh.yml` 在 GitHub Actions 中按站点错峰启动 Playwright。
+3. `multi_market_price_refresh.py` 分别设置当地语言、币种和配送邮编后抓取 Amazon 页面。
+4. `cloudflare_price_sync.py` 把本次结果和最新产品清单上传到 Cloudflare D1；五站价格 JSON 不提交到公开 Git 仓库。
+5. `competitor_market_refresh.py` 读取当前站点已登记的竞品 ASIN，使用相同的语言、邮编和币种抓取页面，并把每日页面截图保存到私有 R2。
+6. `https://price.tentoki.online` 从 D1 读取数据，并通过顶部按钮切换英国、德国、法国、意大利和西班牙。
+
+原法国 GitHub Pages 工作流仅保留手动刷新和静态回退，不再每天重复抓取。
+
+五站共用看板的筛选区提供“下载当前筛选 Excel”，导出顶部筛选、商品明细列筛选及成功/历史价状态筛选后实际显示的商品；商品明细和重点关注页面仍分别保留全部数据与重点关注专用导出。
+
+五站自动运行时间（UTC）：
+
+- 法国：02:20
 - 英国：03:30
 - 德国：04:40
 - 意大利：05:50
 - 西班牙：07:00
 
-也可以在 GitHub Actions 中手动运行 `Daily Amazon UK DE IT ES Price Refresh`，选择单个站点或 `ALL`。仓库需要配置 Actions Secret `PRICE_MONITOR_INGEST_TOKEN`；该值同时保存为 Cloudflare Worker 的 `INGEST_TOKEN`，不能写入代码或提交记录。
+也可以在 GitHub Actions 中手动运行 `Daily Amazon UK DE FR IT ES Price Refresh`，选择单个站点或 `ALL`。仓库需要配置 Actions Secret `PRICE_MONITOR_INGEST_TOKEN`；该值同时保存为 Cloudflare Worker 的 `INGEST_TOKEN`，不能写入代码或提交记录。
 
 Cloudflare 目录说明：
 
 - `cloudflare/price-monitor/src/worker.js`：D1 API、竞品登记、员工状态与私有截图读取接口
-- `cloudflare/price-monitor/public/index.html`：四站统一看板
+- `cloudflare/price-monitor/public/index.html`：五站统一看板
 - `cloudflare/price-monitor/migrations/`：D1 数据表
 - `cloudflare/price-monitor/wrangler.jsonc`：Worker、D1、R2 与自定义域名配置
 

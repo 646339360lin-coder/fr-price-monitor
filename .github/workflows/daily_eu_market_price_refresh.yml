@@ -1,7 +1,8 @@
-name: Daily Amazon UK DE IT ES Price Refresh
+name: Daily Amazon UK DE FR IT ES Price Refresh
 
 on:
   schedule:
+    - cron: "20 2 * * *"
     - cron: "30 3 * * *"
     - cron: "40 4 * * *"
     - cron: "50 5 * * *"
@@ -17,6 +18,7 @@ on:
           - ALL
           - UK
           - DE
+          - FR
           - IT
           - ES
 
@@ -38,12 +40,13 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             case "$REQUESTED_MARKET" in
-              ALL) markets='["UK","DE","IT","ES"]' ;;
-              UK|DE|IT|ES) markets="[\"$REQUESTED_MARKET\"]" ;;
+              ALL) markets='["UK","DE","FR","IT","ES"]' ;;
+              UK|DE|FR|IT|ES) markets="[\"$REQUESTED_MARKET\"]" ;;
               *) exit 1 ;;
             esac
           else
             case "$SCHEDULE" in
+              "20 2 * * *") markets='["FR"]' ;;
               "30 3 * * *") markets='["UK"]' ;;
               "40 4 * * *") markets='["DE"]' ;;
               "50 5 * * *") markets='["IT"]' ;;

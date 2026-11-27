@@ -1,11 +1,9 @@
-name: Daily Amazon.fr Price Refresh
+name: Amazon.fr GitHub Pages Fallback
 
 on:
   push:
     branches:
       - main
-  schedule:
-    - cron: "20 2 * * *"
   workflow_dispatch:
 
 permissions:

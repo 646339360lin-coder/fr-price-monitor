@@ -1,6 +1,7 @@
 const MARKETS = {
   UK: { label: "英国", site: "Amazon.co.uk", currency: "GBP" },
   DE: { label: "德国", site: "Amazon.de", currency: "EUR" },
+  FR: { label: "法国", site: "Amazon.fr", currency: "EUR" },
   IT: { label: "意大利", site: "Amazon.it", currency: "EUR" },
   ES: { label: "西班牙", site: "Amazon.es", currency: "EUR" },
   NL: { label: "荷兰", site: "Amazon.nl", currency: "EUR" },
@@ -615,7 +616,7 @@ async function handleApi(request, env, url, ctx) {
   }
 
   const competitorScreenshotMatch = url.pathname.match(
-    /^\/api\/market\/(UK|DE|IT|ES|NL)\/competitor-screenshot\/(\d+)$/i
+    /^\/api\/market\/(UK|DE|FR|IT|ES|NL)\/competitor-screenshot\/(\d+)$/i
   );
   if (competitorScreenshotMatch && request.method === "GET") {
     return competitorScreenshot(
@@ -627,7 +628,7 @@ async function handleApi(request, env, url, ctx) {
     );
   }
   const competitorItemMatch = url.pathname.match(
-    /^\/api\/market\/(UK|DE|IT|ES|NL)\/competitors\/([A-Z0-9]{10})$/i
+    /^\/api\/market\/(UK|DE|FR|IT|ES|NL)\/competitors\/([A-Z0-9]{10})$/i
   );
   if (competitorItemMatch && request.method === "PATCH") {
     return updateEmployeeCompetitor(
@@ -635,7 +636,7 @@ async function handleApi(request, env, url, ctx) {
     );
   }
   const competitorListMatch = url.pathname.match(
-    /^\/api\/market\/(UK|DE|IT|ES|NL)\/competitors$/i
+    /^\/api\/market\/(UK|DE|FR|IT|ES|NL)\/competitors$/i
   );
   if (competitorListMatch) {
     const market = marketCode(competitorListMatch[1]);
@@ -644,7 +645,7 @@ async function handleApi(request, env, url, ctx) {
     return json({ error: "Method not allowed" }, 405);
   }
 
-  const match = url.pathname.match(/^\/api\/market\/(UK|DE|IT|ES|NL)\/(latest|history|catalog|state|shell-state)$/i);
+  const match = url.pathname.match(/^\/api\/market\/(UK|DE|FR|IT|ES|NL)\/(latest|history|catalog|state|shell-state)$/i);
   if (!match) return json({ error: "Not found" }, 404);
   const market = marketCode(match[1]);
   const resource = match[2].toLowerCase();

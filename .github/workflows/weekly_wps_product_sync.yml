@@ -1,8 +1,8 @@
-name: Weekly WPS Product List Sync
+name: Daily WPS Product List Sync
 
 on:
   schedule:
-    - cron: "30 1 * * 1"
+    - cron: "30 1 * * *"
   workflow_dispatch:
 
 permissions:
